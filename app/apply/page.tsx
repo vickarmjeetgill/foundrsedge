@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Check, ArrowRight, ArrowLeft, Building2, TrendingUp, Rocket, ChevronDown } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
+import { supabase } from '@/lib/supabase';
 
 const steps = ['Your Business', 'Your Stage', 'Your Goals', 'Contact & Submit'];
 
@@ -24,6 +25,50 @@ export default function ApplyPage() {
     firstName: '', lastName: '', email: '', phone: '', linkedin: '', hearAbout: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const handleSubmit = async () => {
+  const { data: member, error: memberError } = await supabase
+    .from('members')
+    .insert({
+      first_name: form.firstName,
+      last_name: form.lastName,
+      email: form.email,
+      phone: form.phone,
+      linkedin: form.linkedin,
+      stage: form.stage,
+      industry: form.industry,
+    })
+    .select()
+    .single();
+
+  if (memberError) {
+    alert(memberError.message);
+    return;
+  }
+
+  const { error: businessError } = await supabase
+    .from('businesses')
+    .insert({
+      member_id: member.id,
+      business_name: form.businessName,
+      business_desc: form.businessDesc,
+      website: form.website,
+      revenue: form.revenue,
+      employees: form.employees,
+      business_type: form.businessType,
+      geographic_focus: form.geographicFocus,
+      ideal_client_industries: form.idealClientIndustries,
+      referral_partner_industries: form.referralPartnerIndustries,
+      priorities: form.priorities,
+      open_to_matching: form.openToMatching === 'true',
+    });
+
+  if (businessError) {
+    alert(businessError.message);
+    return;
+  }
+
+  setSubmitted(true);
+};
 
   const update = (field: string, val: string | string[]) => setForm(f => ({ ...f, [field]: val }));
 
@@ -413,7 +458,7 @@ export default function ApplyPage() {
                   Continue <ArrowRight size={16} />
                 </button>
               ) : (
-                <button onClick={() => setSubmitted(true)} className="btn-primary" style={{ background: '#e7b605' }}>
+                <button onClick={handleSubmit} className="btn-primary" style={{ background: '#e7b605' }}>
                   Submit Application <Check size={16} />
                 </button>
               )}
