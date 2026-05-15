@@ -1,10 +1,11 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star, ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { supabase } from '@/lib/supabase';
 
-const member = {
+const defaultMember = {
   name: 'Jordan Smith',
   business: 'NorthTech Solutions',
   stage: 'Grow',
@@ -39,7 +40,58 @@ const navItems = [
 ];
 
 export default function DashboardPage() {
+
   const [activeNav, setActiveNav] = useState('Dashboard');
+const [member, setMember] = useState(defaultMember);
+
+useEffect(() => {
+  const loadMemberData = async () => {
+    const { data, error } = await supabase
+      .from('businesses')
+      .select(`
+        business_name,
+        business_type,
+        created_at,
+        members (
+          first_name,
+          last_name,
+          stage,
+          industry
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Dashboard data error:', error.message);
+      return;
+    }
+    if (!data) {
+  return;
+}
+
+    const memberData = Array.isArray(data.members)
+      ? data.members[0]
+      : data.members;
+
+    setMember({
+      name: `${memberData?.first_name ?? ''} ${memberData?.last_name ?? ''}`.trim() || 'Member',
+      business: data.business_name ?? 'Business',
+      stage: memberData?.stage ?? 'N/A',
+      industry: memberData?.industry ?? 'N/A',
+      joined: data.created_at
+        ? new Date(data.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'N/A',
+      profileCompletion: 85,
+    });
+  };
+
+  loadMemberData();
+}, []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f9f9f7' }}>
