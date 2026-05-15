@@ -5,13 +5,12 @@ import { Calendar, MapPin, Clock, Filter, Search, Users, ExternalLink, ChevronRi
 import PageLayout from '@/components/PageLayout';
 
 const events = [
-  { id: 1, title: 'Event Name TBD', date: 'Date TBD', time: 'Time TBD', location: 'Location TBD', category: 'Networking', stage: 'All', price: 'TBD', host: 'Host TBD', attendees: 0, featured: true, desc: 'Event description coming soon.' },
-  { id: 2, title: 'Event Name TBD', date: 'Date TBD', time: 'Time TBD', location: 'Location TBD', category: 'Workshop', stage: 'Grow', price: 'TBD', host: 'Host TBD', attendees: 0, featured: true, desc: 'Event description coming soon.' },
-  { id: 3, title: 'Event Name TBD', date: 'Date TBD', time: 'Time TBD', location: 'Location TBD', category: 'Supper Club', stage: 'Invite Only', price: 'Members', host: 'Founders Edge', attendees: 0, featured: false, desc: 'Event description coming soon.' },
+  { id: 1, title: 'Event Name TBD', date: 'Date TBD', time: 'Time TBD', location: 'Location TBD', category: 'Networking', price: 'TBD', host: 'Host TBD', attendees: 0, featured: true, desc: 'Event description coming soon.' },
+  { id: 2, title: 'Event Name TBD', date: 'Date TBD', time: 'Time TBD', location: 'Location TBD', category: 'Workshop', price: 'TBD', host: 'Host TBD', attendees: 0, featured: true, desc: 'Event description coming soon.' },
+  { id: 3, title: 'Event Name TBD', date: 'Date TBD', time: 'Time TBD', location: 'Location TBD', category: 'Supper Club', price: 'Members', host: 'Founders Edge', attendees: 0, featured: false, desc: 'Event description coming soon.' },
 ];
 
 const categories = ['All', 'Networking', 'Workshop', 'Webinar', 'Supper Club'];
-const stages = ['All Stages', 'Start', 'Grow', 'Scale'];
 const priceFilters = ['Any Price', 'Free', 'Paid'];
 
 const categoryColors: Record<string, string> = {
@@ -21,15 +20,13 @@ const categoryColors: Record<string, string> = {
 export default function EventsPage() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
-  const [stage, setStage] = useState('All Stages');
   const [priceFilter, setPriceFilter] = useState('Any Price');
 
   const filtered = events.filter(e => {
     const matchSearch = e.title.toLowerCase().includes(search.toLowerCase()) || e.desc.toLowerCase().includes(search.toLowerCase());
     const matchCat = category === 'All' || e.category === category;
-    const matchStage = stage === 'All Stages' || e.stage === stage || e.stage === 'All';
     const matchPrice = priceFilter === 'Any Price' || (priceFilter === 'Free' ? e.price === 'Free' : e.price !== 'Free');
-    return matchSearch && matchCat && matchStage && matchPrice;
+    return matchSearch && matchCat && matchPrice;
   });
 
   return (
@@ -58,9 +55,6 @@ export default function EventsPage() {
             <select className="select-field" value={category} onChange={e => setCategory(e.target.value)} style={{ width: 'auto', minWidth: 140 }}>
               {categories.map(c => <option key={c}>{c}</option>)}
             </select>
-            <select className="select-field" value={stage} onChange={e => setStage(e.target.value)} style={{ width: 'auto', minWidth: 140 }}>
-              {stages.map(s => <option key={s}>{s}</option>)}
-            </select>
             <select className="select-field" value={priceFilter} onChange={e => setPriceFilter(e.target.value)} style={{ width: 'auto', minWidth: 120 }}>
               {priceFilters.map(p => <option key={p}>{p}</option>)}
             </select>
@@ -87,7 +81,6 @@ export default function EventsPage() {
                 <div>
                   <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                     <span className="tag" style={{ background: categoryColors[event.category] ? `${categoryColors[event.category]}20` : '#f0efe9', color: categoryColors[event.category] || '#5a5650' }}>{event.category}</span>
-                    {event.stage !== 'All' && <span className="tag">{event.stage}</span>}
                     {event.featured && <span className="tag gold">Featured</span>}
                   </div>
                   <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 8 }}>{event.title}</h3>

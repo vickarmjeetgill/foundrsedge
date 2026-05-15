@@ -1,15 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Users, Calendar, BookOpen, Trophy, Star, Zap, Building2, TrendingUp, Handshake, ChevronRight } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-
-const stages = [
-  { label: 'Start', desc: 'Validating your idea & getting off the ground', color: '#e7b605' },
-  { label: 'Grow', desc: 'Scaling revenue, team & operations', color: '#9b7011' },
-  { label: 'Scale', desc: 'Expanding markets & building enterprise value', color: '#5a3a08' },
-];
 
 const features = [
   { icon: Calendar, title: 'Curated Events', desc: 'Feature description coming soon.', href: '/events', label: 'Browse Events' },
@@ -28,13 +22,12 @@ const stats = [
 ];
 
 const testimonials = [
-  { quote: 'Member testimonial coming soon.', name: 'Member Name', role: 'Title, Company', stage: 'Grow' },
-  { quote: 'Member testimonial coming soon.', name: 'Member Name', role: 'Title, Company', stage: 'Scale' },
-  { quote: 'Member testimonial coming soon.', name: 'Member Name', role: 'Title, Company', stage: 'Start' },
+  { quote: 'Member testimonial coming soon.', name: 'Member Name', role: 'Title, Company' },
+  { quote: 'Member testimonial coming soon.', name: 'Member Name', role: 'Title, Company' },
+  { quote: 'Member testimonial coming soon.', name: 'Member Name', role: 'Title, Company' },
 ];
 
 export default function Home() {
-  const [activeStage, setActiveStage] = useState(0);
 
   return (
     <>
@@ -84,24 +77,6 @@ export default function Home() {
               </Link>
             </div>
 
-            {/* Stage pills */}
-            <div style={{ display: 'flex', gap: 12, marginTop: 48, flexWrap: 'wrap' }}>
-              {stages.map((s, i) => (
-                <button key={s.label} onClick={() => setActiveStage(i)} style={{
-                  padding: '8px 20px', background: activeStage === i ? s.color : 'transparent',
-                  border: `2px solid ${activeStage === i ? s.color : '#333'}`,
-                  color: activeStage === i ? '#000' : '#666',
-                  fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px',
-                  letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
-            <p style={{ marginTop: 12, color: '#666', fontSize: '14px', fontFamily: 'Noto Serif, serif', fontStyle: 'italic' }}>
-              {stages[activeStage].desc}
-            </p>
           </div>
         </div>
 
@@ -212,7 +187,6 @@ export default function Home() {
                     <div style={{ fontWeight: 700, fontSize: '15px' }}>{t.name}</div>
                     <div style={{ color: '#666', fontSize: '13px', marginTop: 4 }}>{t.role}</div>
                   </div>
-                  <span className="tag dark">{t.stage}</span>
                 </div>
               </div>
             ))}

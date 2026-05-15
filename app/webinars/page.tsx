@@ -4,9 +4,9 @@ import { Video, Calendar, Clock, Users, Lock, Play } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 
 const webinars = [
-  { id: 1, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Sales', stage: ['Grow', 'Scale'], upcoming: true, replay: false, desc: 'Webinar description coming soon.' },
-  { id: 2, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Finance', stage: ['Start', 'Grow'], upcoming: true, replay: false, desc: 'Webinar description coming soon.' },
-  { id: 3, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Funding', stage: ['Start', 'Grow'], upcoming: false, replay: true, desc: 'Webinar description coming soon.' },
+  { id: 1, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Sales', upcoming: true, replay: false, desc: 'Webinar description coming soon.' },
+  { id: 2, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Finance', upcoming: true, replay: false, desc: 'Webinar description coming soon.' },
+  { id: 3, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Funding', upcoming: false, replay: true, desc: 'Webinar description coming soon.' },
 ];
 
 const categories = ['All', 'Sales', 'Finance', 'Funding', 'HR & People', 'Marketing'];
@@ -97,9 +97,6 @@ export default function WebinarsPage() {
                   <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#9a9585', fontSize: '13px' }}>
                     <Users size={13} style={{ color: '#e7b605' }} /> {w.attendees} registered
                   </span>
-                </div>
-                <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-                  {w.stage.map(s => <span key={s} className="tag" style={{ background: '#f0efe9' }}>{s}</span>)}
                 </div>
                 <button className="btn-primary" style={{ padding: '10px 20px', fontSize: '12px' }}>
                   {w.replay ? <><Play size={14} /> Watch Replay</> : 'Register Free'}

@@ -40,7 +40,7 @@ export default function Footer() {
           {/* Membership */}
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', color: '#e7b605', marginBottom: 20 }}>Membership</div>
-            {[['Apply Now', '/apply'], ['Login', '/login'], ['Dashboard', '/dashboard'], ['Pricing', '/apply#pricing']].map(([label, href]) => (
+            {[['Membership', '/membership'], ['Apply Now', '/apply'], ['Login', '/login'], ['Dashboard', '/dashboard']].map(([label, href]) => (
               <Link key={href} href={href} style={{ display: 'block', color: '#888', fontSize: '14px', textDecoration: 'none', marginBottom: 12, transition: 'color 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#e7b605')}
                 onMouseLeave={e => (e.currentTarget.style.color = '#888')}>
@@ -62,7 +62,7 @@ export default function Footer() {
             </div>
             <div style={{ marginTop: 24 }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Annual Membership</span>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: '#e7b605', marginTop: 6 }}>$495<span style={{ fontSize: '14px', color: '#555', fontWeight: 400 }}> + GST</span></div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: '#e7b605', marginTop: 6 }}>TBD</div>
             </div>
           </div>
         </div>

@@ -1,10 +1,10 @@
 'use client';
 import { useState } from 'react';
-import { Check, ArrowRight, ArrowLeft, Building2, TrendingUp, Rocket, ChevronDown } from 'lucide-react';
+import { Check, ArrowRight, ArrowLeft, ChevronDown } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 import { supabase } from '@/lib/supabase';
 
-const steps = ['Your Business', 'Your Stage', 'Your Goals', 'Contact & Submit'];
+const steps = ['Your Business', 'Your Goals', 'Contact & Submit'];
 
 const industries = ['Technology', 'Marketing & Advertising', 'Finance & Accounting', 'Legal Services', 'HR & People', 'Design & Creative', 'Health & Wellness', 'Construction & Real Estate', 'Retail & E-commerce', 'Professional Services', 'Manufacturing', 'Other'];
 
@@ -17,8 +17,7 @@ const businessTypes = ['B2B', 'B2C', 'Both'];
 export default function ApplyPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
-    businessName: '', businessDesc: '', industry: '', website: '', revenue: '',
-    stage: '', employees: '',
+    businessName: '', businessDesc: '', industry: '', website: '', revenue: '', employees: '',
     priorities: [] as string[], idealClients: '', idealClientIndustries: [] as string[], idealClientSize: '', businessType: '',
     referralPartners: '', referralPartnerIndustries: [] as string[],
     geographicFocus: [] as string[], openToMatching: 'true',
@@ -34,7 +33,6 @@ export default function ApplyPage() {
       email: form.email,
       phone: form.phone,
       linkedin: form.linkedin,
-      stage: form.stage,
       industry: form.industry,
     })
     .select()
@@ -81,12 +79,6 @@ export default function ApplyPage() {
     const curr = form[field as keyof typeof form] as string[];
     update(field, curr.includes(val) ? curr.filter(x => x !== val) : [...curr, val]);
   };
-
-  const stageOptions = [
-    { id: 'start', icon: Rocket, label: 'Start', desc: 'Validating my idea or in early revenue phase (Pre-revenue to ~$500K ARR)' },
-    { id: 'grow', icon: TrendingUp, label: 'Grow', desc: 'Scaling revenue and building my team ($500K to ~$5M ARR)' },
-    { id: 'scale', icon: Building2, label: 'Scale', desc: 'Expanding markets and building enterprise value ($5M+ ARR)' },
-  ];
 
   if (submitted) {
     return (
@@ -200,43 +192,8 @@ export default function ApplyPage() {
               </div>
             )}
 
-            {/* Step 1: Stage */}
+            {/* Step 1: Goals */}
             {step === 1 && (
-              <div>
-                <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '28px', marginBottom: 8 }}>Where are you in your journey?</h2>
-                <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', marginBottom: 32 }}>This helps us personalize your Founders Edge experience.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-                  {stageOptions.map(opt => (
-                    <button key={opt.id} onClick={() => update('stage', opt.id)} style={{
-                      padding: '24px', background: form.stage === opt.id ? '#000' : '#f9f9f7',
-                      border: `2px solid ${form.stage === opt.id ? '#e7b605' : '#e2e0d8'}`,
-                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
-                      display: 'flex', gap: 20, alignItems: 'center',
-                    }}>
-                      <opt.icon size={24} style={{ color: form.stage === opt.id ? '#e7b605' : '#9a9585', flexShrink: 0 }} />
-                      <div>
-                        <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px', color: form.stage === opt.id ? '#fff' : '#000', marginBottom: 4 }}>{opt.label}</div>
-                        <div style={{ fontFamily: 'Noto Serif, serif', fontSize: '14px', color: form.stage === opt.id ? '#aaa' : '#5a5650' }}>{opt.desc}</div>
-                      </div>
-                      {form.stage === opt.id && <Check size={20} style={{ color: '#e7b605', marginLeft: 'auto', flexShrink: 0 }} />}
-                    </button>
-                  ))}
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Team Size</label>
-                  <div style={{ position: 'relative' }}>
-                    <select className="select-field" value={form.employees} onChange={e => update('employees', e.target.value)}>
-                      <option value="">Select...</option>
-                      {['Solo founder', '2–5', '6–15', '16–50', '51–150', '150+'].map(e => <option key={e}>{e}</option>)}
-                    </select>
-                    <ChevronDown size={16} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: '#9a9585', pointerEvents: 'none' }} />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Goals */}
-            {step === 2 && (
               <div>
                 <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '28px', marginBottom: 8 }}>What are your priorities?</h2>
                 <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', marginBottom: 24 }}>Select all that apply. This drives your personalized recommendations and matches.</p>
@@ -393,8 +350,8 @@ export default function ApplyPage() {
               </div>
             )}
 
-            {/* Step 3: Contact */}
-            {step === 3 && (
+            {/* Step 2: Contact */}
+            {step === 2 && (
               <div>
                 <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '28px', marginBottom: 32 }}>Your contact details</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
