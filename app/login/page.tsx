@@ -3,11 +3,26 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { login } from '@/app/actions/auth';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
+  const [error, setError] = useState('');
+
+  const router = useRouter();
+
+  async function handleSubmit(formData: FormData) {
+    const result = await login(formData);
+
+    if (result?.error) {
+      setError(result.error);
+    } else {
+      router.push('/dashboard');
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#000', display: 'flex' }}>
@@ -24,20 +39,41 @@ export default function LoginPage() {
           Sign in to access your Founders Edge dashboard.
         </p>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <form action={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <label style={{ display: 'block', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#888', marginBottom: 8 }}>
               Email Address
             </label>
             <input
+              name="email" // Added for the server action
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(''); // Clears the error when the user starts typing
+              }}
               placeholder="you@yourcompany.com"
-              style={{ width: '100%', padding: '14px 18px', background: '#111', border: '1px solid #2a2a2a', fontFamily: 'DM Sans, sans-serif', fontSize: '15px', color: '#fff', outline: 'none', transition: 'border-color 0.2s' }}
+              style={{
+                width: '100%',
+                padding: '14px 18px',
+                background: '#111',
+                // Highlights the border red if an error exists
+                border: `1px solid ${error ? '#ff4444' : '#2a2a2a'}`,
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '15px',
+                color: '#fff',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
               onFocus={e => (e.target.style.borderColor = '#e7b605')}
-              onBlur={e => (e.target.style.borderColor = '#2a2a2a')}
+              onBlur={e => (e.target.style.borderColor = error ? '#ff4444' : '#2a2a2a')}
             />
+            {/* Displays the error message text underneath the input */}
+            {error && (
+              <p style={{ color: '#ff4444', fontSize: '12px', marginTop: '8px', fontFamily: 'DM Sans, sans-serif' }}>
+                {error}
+              </p>
+            )}
           </div>
 
           <div>
@@ -49,6 +85,7 @@ export default function LoginPage() {
             </div>
             <div style={{ position: 'relative' }}>
               <input
+                name="password"
                 type={showPass ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
@@ -57,16 +94,20 @@ export default function LoginPage() {
                 onFocus={e => (e.target.style.borderColor = '#e7b605')}
                 onBlur={e => (e.target.style.borderColor = '#2a2a2a')}
               />
-              <button onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>
+              <button type="button" onClick={() => setShowPass(!showPass)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#666', cursor: 'pointer' }}>
                 {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
-          <Link href="/dashboard" className="btn-primary" style={{ marginTop: 8, justifyContent: 'center', fontSize: '15px', padding: '16px' }}>
+          <button
+            type="submit"
+            className="btn-primary"
+            style={{ marginTop: 8, justifyContent: 'center', fontSize: '15px', padding: '16px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, background: '#e7b605', color: '#000', fontWeight: 700, borderRadius: '4px' }}
+          >
             Sign In <ArrowRight size={18} />
-          </Link>
-        </div>
+          </button>
+        </form>
 
         <p style={{ marginTop: 32, color: '#555', fontSize: '14px', textAlign: 'center', fontFamily: 'Noto Serif, serif' }}>
           Not a member yet?{' '}
