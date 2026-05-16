@@ -39,6 +39,7 @@ model members {
   businesses businesses[]
 }
 
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
