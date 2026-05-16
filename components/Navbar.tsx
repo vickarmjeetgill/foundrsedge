@@ -6,6 +6,7 @@ import { Menu, X, ChevronDown } from 'lucide-react';
 import Logo from './Logo';
 
 const navLinks = [
+  { label: 'Membership', href: '/membership' },
   { label: 'Events', href: '/events' },
   { label: 'Directory', href: '/directory' },
   { label: 'Resources', href: '/resources' },

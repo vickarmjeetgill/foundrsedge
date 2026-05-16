@@ -44,10 +44,6 @@ yarn-error.log*
 next-env.d.ts
 
 /app/generated/prisma
-<<<<<<< HEAD
 /scratch
+.vercel
 
-# config files
-tsconfig.json
-=======
->>>>>>> a4e80e52adaa193f1716a1e6529532f75f74bcba

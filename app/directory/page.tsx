@@ -5,28 +5,23 @@ import { Search, MapPin, Star, TrendingUp, ExternalLink, Zap, Filter } from 'luc
 import PageLayout from '@/components/PageLayout';
 
 const businesses = [
-  { id: 1, name: 'Business Name TBD', industry: 'Technology', stage: 'Scale', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: true, tags: ['Tag TBD'] },
-  { id: 2, name: 'Business Name TBD', industry: 'Marketing', stage: 'Grow', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: false, tags: ['Tag TBD'] },
-  { id: 3, name: 'Business Name TBD', industry: 'Finance', stage: 'Start', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: false, boosted: false, tags: ['Tag TBD'] },
+  { id: 1, name: 'Business Name TBD', industry: 'Technology', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: true, tags: ['Tag TBD'] },
+  { id: 2, name: 'Business Name TBD', industry: 'Marketing', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: false, tags: ['Tag TBD'] },
+  { id: 3, name: 'Business Name TBD', industry: 'Finance', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: false, boosted: false, tags: ['Tag TBD'] },
 ];
 
 const industries = ['All Industries', 'Technology', 'Marketing', 'Finance', 'Legal', 'HR & People', 'Design', 'Health & Wellness', 'Construction'];
-const stages = ['All Stages', 'Start', 'Grow', 'Scale'];
-
-const stageColors: Record<string, string> = { Start: '#2d7a3a', Grow: '#9b7011', Scale: '#000' };
 
 export default function DirectoryPage() {
   const [search, setSearch] = useState('');
   const [industry, setIndustry] = useState('All Industries');
-  const [stage, setStage] = useState('All Stages');
   const [showFeatured, setShowFeatured] = useState(false);
 
   const filtered = businesses.filter(b => {
     const matchSearch = b.name.toLowerCase().includes(search.toLowerCase()) || b.desc.toLowerCase().includes(search.toLowerCase()) || b.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
     const matchInd = industry === 'All Industries' || b.industry === industry;
-    const matchStage = stage === 'All Stages' || b.stage === stage;
     const matchFeat = !showFeatured || b.featured;
-    return matchSearch && matchInd && matchStage && matchFeat;
+    return matchSearch && matchInd && matchFeat;
   });
 
   // Sort: boosted first, then featured, then rest
@@ -56,9 +51,6 @@ export default function DirectoryPage() {
             </div>
             <select className="select-field" value={industry} onChange={e => setIndustry(e.target.value)} style={{ width: 'auto', minWidth: 160 }}>
               {industries.map(i => <option key={i}>{i}</option>)}
-            </select>
-            <select className="select-field" value={stage} onChange={e => setStage(e.target.value)} style={{ width: 'auto', minWidth: 130 }}>
-              {stages.map(s => <option key={s}>{s}</option>)}
             </select>
             <button onClick={() => setShowFeatured(!showFeatured)} style={{
               padding: '14px 20px', background: showFeatured ? '#e7b605' : 'transparent',
@@ -95,7 +87,6 @@ export default function DirectoryPage() {
                 )}
                 <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                   <span className="tag">{biz.industry}</span>
-                  <span className="tag" style={{ background: `${stageColors[biz.stage]}15`, color: stageColors[biz.stage] }}>{biz.stage}</span>
                   {biz.featured && !biz.boosted && <span className="tag gold">Featured</span>}
                 </div>
                 <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 8 }}>{biz.name}</h3>
