@@ -10,7 +10,7 @@ const features = [
   { icon: Building2, title: 'Business Directory', desc: 'Feature description coming soon.', href: '/directory', label: 'View Directory' },
   { icon: BookOpen, title: 'Resources Hub', desc: 'Feature description coming soon.', href: '/resources', label: 'Explore Resources' },
   { icon: Trophy, title: 'Awards & Recognition', desc: 'Feature description coming soon.', href: '/awards', label: 'View Awards' },
-  { icon: Users, title: 'Smart Matching', desc: 'Feature description coming soon.', href: '/dashboard', label: 'Learn More' },
+  { icon: Users, title: 'Smart Matching', desc: 'Curated member-to-member introductions based on your industry, ideal client, and referral partner needs.', href: '/smart-matching', label: 'Learn More' },
   { icon: Star, title: 'Supper Club', desc: 'Feature description coming soon.', href: '/supper-club', label: 'View Events' },
 ];
 
