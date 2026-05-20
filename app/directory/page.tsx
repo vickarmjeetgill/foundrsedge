@@ -10,7 +10,20 @@ const businesses = [
   { id: 3, name: 'Business Name TBD', industry: 'Finance', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: false, boosted: false, tags: ['Tag TBD'] },
 ];
 
-const industries = ['All Industries', 'Technology', 'Marketing', 'Finance', 'Legal', 'HR & People', 'Design', 'Health & Wellness', 'Construction'];
+const industries = [
+  'All Industries',
+  'Professional Services',
+  'Manufacturing',
+  'B2B SaaS',
+  'Marketing Agency',
+  'E-commerce',
+  'Technology',
+  'Finance',
+  'Legal',
+  'Health & Wellness',
+  'Construction',
+  'Other'
+];
 
 export default function DirectoryPage() {
   const [search, setSearch] = useState('');
@@ -18,9 +31,21 @@ export default function DirectoryPage() {
   const [showFeatured, setShowFeatured] = useState(false);
 
   const filtered = businesses.filter(b => {
-    const matchSearch = b.name.toLowerCase().includes(search.toLowerCase()) || b.desc.toLowerCase().includes(search.toLowerCase()) || b.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
-    const matchInd = industry === 'All Industries' || b.industry === industry;
-    const matchFeat = !showFeatured || b.featured;
+    const searchText = search.toLowerCase();
+
+    const matchSearch =
+      b.name.toLowerCase().includes(searchText) ||
+      b.desc.toLowerCase().includes(searchText) ||
+      b.location.toLowerCase().includes(searchText) ||
+      b.industry.toLowerCase().includes(searchText) ||
+      b.tags.some(t => t.toLowerCase().includes(searchText));
+
+    const matchInd =
+      industry === 'All Industries' || b.industry === industry;
+
+    const matchFeat =
+      !showFeatured || b.featured;
+
     return matchSearch && matchInd && matchFeat;
   });
 
@@ -75,6 +100,11 @@ export default function DirectoryPage() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+            {!loading && sorted.length === 0 && (
+              <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '32px', textAlign: 'center', color: '#5a5650' }}>
+                No businesses match your search. Try changing your search or filter.
+              </div>
+            )}
             {sorted.map(biz => (
               <div key={biz.id} className="card" style={{
                 borderLeft: biz.boosted ? '4px solid #e7b605' : biz.featured ? '4px solid #9b7011' : '4px solid transparent',
