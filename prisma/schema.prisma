@@ -4,9 +4,9 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
-<<<<<<< HEAD
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model businesses {
   id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -40,8 +40,6 @@ model members {
   businesses businesses[]
 }
 
-=======
->>>>>>> a4e80e52adaa193f1716a1e6529532f75f74bcba
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
