@@ -1,22 +1,14 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Search, MapPin, Star, TrendingUp, ExternalLink, Zap, Filter } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
-import { supabase } from '@/lib/supabase';
 
-type Business = {
-  id: string;
-  name: string;
-  industry: string;
-  location: string;
-  desc: string;
-  rating: number;
-  reviews: number;
-  featured: boolean;
-  boosted: boolean;
-  tags: string[];
-};
+const businesses = [
+  { id: 1, name: 'Business Name TBD', industry: 'Technology', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: true, tags: ['Tag TBD'] },
+  { id: 2, name: 'Business Name TBD', industry: 'Marketing', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: false, tags: ['Tag TBD'] },
+  { id: 3, name: 'Business Name TBD', industry: 'Finance', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: false, boosted: false, tags: ['Tag TBD'] },
+];
 
 const industries = ['All Industries', 'Technology', 'Marketing', 'Finance', 'Legal', 'HR & People', 'Design', 'Health & Wellness', 'Construction'];
 
@@ -24,53 +16,6 @@ export default function DirectoryPage() {
   const [search, setSearch] = useState('');
   const [industry, setIndustry] = useState('All Industries');
   const [showFeatured, setShowFeatured] = useState(false);
-  const [businesses, setBusinesses] = useState<Business[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadBusinesses = async () => {
-      setLoading(true);
-
-      const { data, error } = await supabase
-        .from('businesses')
-        .select(`
-        id,
-        business_name,
-        business_desc,
-        business_type,
-        geographic_focus,
-        created_at
-      `)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Directory data error:', error);
-        alert(error.message);
-        setLoading(false);
-        return;
-      }
-
-      const formattedBusinesses: Business[] = (data ?? []).map((item) => {
-        return {
-          id: item.id,
-          name: item.business_name ?? 'Unnamed Business',
-          industry: item.business_type ?? 'Business',
-          location: item.geographic_focus?.[0] ?? 'Calgary',
-          desc: item.business_desc ?? 'No business description available yet.',
-          rating: 0,
-          reviews: 0,
-          featured: false,
-          boosted: false,
-          tags: [item.business_type ?? 'Member Business'],
-        };
-      });
-
-      setBusinesses(formattedBusinesses);
-      setLoading(false);
-    };
-
-    loadBusinesses();
-  }, []);
 
   const filtered = businesses.filter(b => {
     const matchSearch = b.name.toLowerCase().includes(search.toLowerCase()) || b.desc.toLowerCase().includes(search.toLowerCase()) || b.tags.some(t => t.toLowerCase().includes(search.toLowerCase()));
@@ -120,14 +65,8 @@ export default function DirectoryPage() {
         </div>
       </div>
 
-
-      <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
+      <div style={{ padding: '60px 0', background: '#aba7a5' }}>
         <div className="container">
-          {loading && (
-            <div style={{ marginBottom: 24, color: '#9a9585', fontSize: '14px', fontWeight: 600 }}>
-              Loading businesses...
-            </div>
-          )}
           <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <span style={{ color: '#9a9585', fontSize: '14px', fontWeight: 600 }}>{sorted.length} businesses found</span>
             <Link href="/directory/list" className="btn-outline" style={{ padding: '10px 20px', fontSize: '12px' }}>

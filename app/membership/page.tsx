@@ -123,7 +123,7 @@ export default function MembershipPage() {
       </div>
 
       {/* What's Included */}
-      <div style={{ background: '#f9f9f7', padding: '100px 0' }}>
+      <div style={{ background: '#aba7a5', padding: '100px 0' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
             <div>
@@ -192,7 +192,7 @@ export default function MembershipPage() {
       </div>
 
       {/* Pricing */}
-      <div style={{ background: '#f9f9f7', padding: '100px 0' }}>
+      <div style={{ background: '#aba7a5', padding: '100px 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 64 }}>
             <div className="section-label" style={{ justifyContent: 'center' }}>Pricing</div>
@@ -254,7 +254,7 @@ export default function MembershipPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {faqs.map((faq, i) => (
-                <div key={i} style={{ background: '#f9f9f7', border: '1px solid #e2e0d8', padding: '28px 32px', borderLeft: '4px solid #e7b605' }}>
+                <div key={i} style={{ background: '#aba7a5', border: '1px solid #e2e0d8', padding: '28px 32px', borderLeft: '4px solid #e7b605' }}>
                   <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '16px', marginBottom: 10 }}>{faq.q}</div>
                   <div style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7 }}>{faq.a}</div>
                 </div>

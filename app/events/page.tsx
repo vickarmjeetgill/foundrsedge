@@ -63,7 +63,7 @@ export default function EventsPage() {
       </div>
 
       {/* Events List */}
-      <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
+      <div style={{ padding: '60px 0', background: '#aba7a5' }}>
         <div className="container">
           <div style={{ marginBottom: 24, color: '#9a9585', fontSize: '14px', fontWeight: 600 }}>
             {filtered.length} event{filtered.length !== 1 ? 's' : ''} found

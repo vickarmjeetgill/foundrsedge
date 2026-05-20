@@ -56,7 +56,7 @@ export default function ResourcesPage() {
         </div>
       </div>
 
-      <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
+      <div style={{ padding: '60px 0', background: '#aba7a5' }}>
         <div className="container">
           <div style={{ marginBottom: 20, color: '#9a9585', fontSize: '14px', fontWeight: 600 }}>
             {filtered.length} resource{filtered.length !== 1 ? 's' : ''} found

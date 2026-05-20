@@ -131,7 +131,7 @@ export default function Home() {
       </section>
 
       {/* How It Works */}
-      <section style={{ padding: '100px 0', background: '#f9f9f7' }}>
+      <section style={{ padding: '100px 0', background: '#aba7a5' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
             <div>
