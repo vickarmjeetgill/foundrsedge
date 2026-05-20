@@ -12,6 +12,11 @@ export default async function proxy(request: NextRequest) {
 
         // 1. If access token is valid, let them through
         if (decodedSession) {
+            // Enforce RBAC for Admin routes
+            if (path.startsWith('/dashboard/admin') && decodedSession.role !== 'ADMIN') {
+                console.warn(`🔒 Blocked non-admin user ${decodedSession.userId} from accessing ${path}`);
+                return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
+            }
             return NextResponse.next();
         }
 
@@ -20,8 +25,16 @@ export default async function proxy(request: NextRequest) {
         const decodedRefresh = await decrypt(refreshToken);
 
         if (decodedRefresh && decodedRefresh.userId) {
-            // SILENT REFRESH: Issue a new 15-minute access token
-            const newSession = await encrypt({ userId: decodedRefresh.userId }, '15m');
+            const role = decodedRefresh.role ?? 'MEMBER';
+
+            // Enforce RBAC for Admin routes during refresh
+            if (path.startsWith('/dashboard/admin') && role !== 'ADMIN') {
+                console.warn(`🔒 Blocked non-admin refresh for ${path} by user ${decodedRefresh.userId}`);
+                return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
+            }
+
+            // SILENT REFRESH: Issue a new 15-minute access token carrying the role
+            const newSession = await encrypt({ userId: decodedRefresh.userId, role }, '15m');
             const response = NextResponse.next();
             
             response.cookies.set('session', newSession, {

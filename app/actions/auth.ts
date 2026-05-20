@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
-import { setSession } from '@/lib/session';
+import { setSession, deleteSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 
 // Used on the login page — checks credentials, does NOT create a new user
 export async function login(formData: FormData) {
@@ -62,6 +63,11 @@ export async function register(formData: FormData) {
         }
         return { error: `Server error: ${error?.message ?? "Unknown"}` }
     }
+}
+
+export async function logout() {
+    await deleteSession();
+    redirect('/login');
 }
 
 

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star, ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
+import { logout } from '@/app/actions/auth';
 
 const defaultMember = {
   name: 'Jordan Smith',
@@ -152,9 +153,29 @@ useEffect(() => {
           <Link href="/dashboard/settings" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', textDecoration: 'none', color: '#666', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px' }}>
             <Settings size={16} /> Settings
           </Link>
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', textDecoration: 'none', color: '#666', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px' }}>
+          <button 
+            onClick={async () => {
+              await logout();
+            }}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 12, 
+              padding: '12px 24px', 
+              textDecoration: 'none', 
+              color: '#666', 
+              fontFamily: 'DM Sans, sans-serif', 
+              fontWeight: 600, 
+              fontSize: '14px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left'
+            }}
+          >
             <LogOut size={16} /> Sign Out
-          </Link>
+          </button>
         </div>
       </aside>
 

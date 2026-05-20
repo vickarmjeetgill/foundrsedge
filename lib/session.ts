@@ -1,48 +1,65 @@
-import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { encrypt } from './tokens';
+import { prisma } from './prisma';
 
-const secretKey = process.env.JWT_SECRET;
-const key = new TextEncoder().encode(secretKey);
-
-export async function encrypt(payload: any) {
-    return new SignJWT(payload)
-        .setProtectedHeader({ alg: 'HS256' })
-        .setIssuedAt()
-        .setExpirationTime('2h')
-        .sign(key);
-}
-
-export async function decrypt(session: string | undefined = '') {
-    try {
-        const { payload } = await jwtVerify(session, key, {
-            algorithms: ['HS256'],
-        });
-        return payload;
-    } catch (error) {
-        return null;
-    }
-}
-
+/**
+ * Sets secure access (session) and refresh cookies, and stores the refresh token in the database.
+ */
 export async function setSession(userId: string) {
-    const expires = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
-    const session = await encrypt({ userId });
+    // 1. Retrieve the user's actual role from the database
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+    });
+    const role = user?.role ?? "MEMBER";
+
+    const sessionExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    const refreshExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    
+    // 2. Generate both session JWT (15m) and refresh JWT (7d), carrying the role
+    const session = await encrypt({ userId, role }, '15m');
+    const refreshToken = await encrypt({ userId, role }, '7d');
 
     const cookieStore = await cookies();
+    
+    // 3. Set the 15-minute access token cookie
     cookieStore.set('session', session, {
-        expires,
+        expires: sessionExpiry,
         httpOnly: true,
         secure: true,
         sameSite: 'lax',
         path: '/',
     });
+
+    // 4. Set the 7-day refresh token cookie
+    cookieStore.set('refreshToken', refreshToken, {
+        expires: refreshExpiry,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+    });
+
+    // 5. Persist the refresh token in the Supabase database for extra security verification
+    await prisma.user.update({
+        where: { id: userId },
+        data: { refreshToken: refreshToken }
+    });
 }
 
+/**
+ * Completely clears all session and refresh cookies from the browser.
+ */
 export async function deleteSession() {
     const cookieStore = await cookies();
     cookieStore.delete('session');
+    cookieStore.delete('refreshToken');
 }
 
+/**
+ * Destroys session cookies and redirects user to login page.
+ */
 export async function logout() {
     await deleteSession();
     redirect('/login');
