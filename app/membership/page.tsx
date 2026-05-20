@@ -7,48 +7,56 @@ const benefits = [
   {
     icon: Calendar,
     title: 'Curated Events',
+    href: '/events',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: Building2,
     title: 'Business Directory',
+    href: '/directory',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: BookOpen,
     title: 'Resources Hub',
+    href: '/resources',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: Trophy,
     title: 'Awards & Grants',
+    href: '/awards',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: Video,
     title: 'Expert Webinars',
+    href: '/webinars',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: Users,
     title: 'Smart Matching',
+    href: '/smart-matching',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: Star,
     title: 'Supper Club Access',
+    href: '/supper-club',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
   {
     icon: BarChart,
     title: 'Member Dashboard',
+    href: '/dashboard',
     desc: 'Benefit description coming soon.',
     items: ['Benefit coming soon.', 'Benefit coming soon.', 'Benefit coming soon.'],
   },
@@ -157,25 +165,27 @@ export default function MembershipPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
             {benefits.map((b) => (
-              <div key={b.title} className="card">
-                <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-                  <div style={{ width: 48, height: 48, background: 'rgba(231,182,5,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <b.icon size={22} style={{ color: '#e7b605' }} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 6 }}>{b.title}</h3>
-                    <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7 }}>{b.desc}</p>
-                  </div>
-                </div>
-                <div style={{ borderTop: '1px solid #f0efe9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {b.items.map((item, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 5, height: 5, background: '#e7b605', flexShrink: 0 }} />
-                      <span style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '13px' }}>{item}</span>
+              <Link key={b.title} href={b.href} style={{ textDecoration: 'none' }}>
+                <div className="card" style={{ height: '100%', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
+                    <div style={{ width: 48, height: 48, background: 'rgba(231,182,5,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <b.icon size={22} style={{ color: '#e7b605' }} />
                     </div>
-                  ))}
+                    <div>
+                      <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 6 }}>{b.title}</h3>
+                      <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7 }}>{b.desc}</p>
+                    </div>
+                  </div>
+                  <div style={{ borderTop: '1px solid #f0efe9', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {b.items.map((item, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 5, height: 5, background: '#e7b605', flexShrink: 0 }} />
+                        <span style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '13px' }}>{item}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
