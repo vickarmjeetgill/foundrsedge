@@ -10,7 +10,7 @@ export default function Footer() {
         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 48, marginBottom: 64 }}>
           {/* Brand */}
           <div>
-            <Logo />
+            <Link href="/" style={{ textDecoration: 'none' }}><Logo /></Link>
             <p style={{ marginTop: 20, color: '#888', fontSize: '14px', lineHeight: 1.7, maxWidth: 280 }}>
               Calgary's curated membership platform for entrepreneurs. Connecting you to people, opportunities, and resources at every stage.
             </p>

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Lock, Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 import Logo from '@/components/Logo';
 
 const ADMINS = [
@@ -30,7 +31,7 @@ export default function AdminLoginPage() {
     <div style={{ minHeight: '100vh', background: '#000', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
       {/* Logo */}
       <div style={{ marginBottom: 48 }}>
-        <Logo />
+        <Link href="/" style={{ textDecoration: 'none' }}><Logo /></Link>
       </div>
 
       {/* Card */}

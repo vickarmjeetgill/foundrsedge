@@ -280,7 +280,7 @@ export default function AdminDashboard() {
       <div style={{ background: '#000', borderBottom: '1px solid #1a1a1a', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <Logo size="sm" />
+            <Link href="/" style={{ textDecoration: 'none' }}><Logo size="sm" /></Link>
             <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
             <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
           </div>
