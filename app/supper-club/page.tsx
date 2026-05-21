@@ -35,7 +35,7 @@ export default function SupperClubPage() {
       </div>
 
       {/* What is it */}
-      <div style={{ padding: '80px 0', background: '#aba7a5' }}>
+      <div style={{ padding: '80px 0', background: '#f9f9f7' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
             <div>
@@ -88,7 +88,7 @@ export default function SupperClubPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {events.map(event => (
               <div key={event.id} style={{
-                background: '#aba7a5', border: '1px solid #e2e0d8',
+                background: '#f9f9f7', border: '1px solid #e2e0d8',
                 padding: '36px', display: 'grid', gridTemplateColumns: '1fr auto',
                 gap: 24, alignItems: 'center',
                 borderLeft: '4px solid #e7b605',

@@ -92,7 +92,7 @@ export default function ApplyPage() {
             <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '18px', lineHeight: 1.8, marginBottom: 32 }}>
               Thank you, {form.firstName}! We've received your application for <strong>{form.businessName}</strong>. Our team reviews every application personally. Expect to hear from us within 5–7 business days.
             </p>
-            <div style={{ background: '#aba7a5', border: '1px solid #e2e0d8', padding: '24px', textAlign: 'left', marginBottom: 32 }}>
+            <div style={{ background: '#f9f9f7', border: '1px solid #e2e0d8', padding: '24px', textAlign: 'left', marginBottom: 32 }}>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>What happens next?</div>
               {['Our team reviews your application', 'We may reach out for a brief call', 'Approved members receive onboarding instructions', 'Set up your profile and start connecting'].map((s, i) => (
                 <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 8, color: '#5a5650', fontSize: '14px', fontFamily: 'Noto Serif, serif' }}>
@@ -145,7 +145,7 @@ export default function ApplyPage() {
         </div>
       </div>
 
-      <div style={{ padding: '60px 0', background: '#aba7a5' }}>
+      <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
         <div className="container">
           <div style={{ maxWidth: 680, margin: '0 auto', background: '#fff', border: '1px solid #e2e0d8', padding: '48px' }}>
 
@@ -201,7 +201,7 @@ export default function ApplyPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 32 }}>
                   {priorities.map(p => (
                     <button key={p} onClick={() => togglePriority(p)} style={{
-                      padding: '12px 16px', background: form.priorities.includes(p) ? '#000' : '#aba7a5',
+                      padding: '12px 16px', background: form.priorities.includes(p) ? '#000' : '#f9f9f7',
                       border: `2px solid ${form.priorities.includes(p) ? '#e7b605' : '#e2e0d8'}`,
                       cursor: 'pointer', textAlign: 'left', fontFamily: 'DM Sans, sans-serif',
                       fontWeight: 600, fontSize: '14px', color: form.priorities.includes(p) ? '#e7b605' : '#000',
@@ -223,7 +223,7 @@ export default function ApplyPage() {
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {industries.map(ind => (
                           <button key={ind} onClick={() => toggleMulti('idealClientIndustries', ind)} style={{
-                            padding: '8px 14px', background: form.idealClientIndustries.includes(ind) ? '#000' : '#aba7a5',
+                            padding: '8px 14px', background: form.idealClientIndustries.includes(ind) ? '#000' : '#f9f9f7',
                             border: `2px solid ${form.idealClientIndustries.includes(ind) ? '#e7b605' : '#e2e0d8'}`,
                             cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px',
                             color: form.idealClientIndustries.includes(ind) ? '#e7b605' : '#5a5650', transition: 'all 0.2s',
@@ -240,7 +240,7 @@ export default function ApplyPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {clientSizes.map(s => (
                             <button key={s} onClick={() => update('idealClientSize', s)} style={{
-                              padding: '10px 14px', background: form.idealClientSize === s ? '#000' : '#aba7a5',
+                              padding: '10px 14px', background: form.idealClientSize === s ? '#000' : '#f9f9f7',
                               border: `2px solid ${form.idealClientSize === s ? '#e7b605' : '#e2e0d8'}`,
                               cursor: 'pointer', textAlign: 'left', fontFamily: 'DM Sans, sans-serif',
                               fontWeight: 600, fontSize: '13px', color: form.idealClientSize === s ? '#e7b605' : '#5a5650',
@@ -258,7 +258,7 @@ export default function ApplyPage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {businessTypes.map(t => (
                             <button key={t} onClick={() => update('businessType', t)} style={{
-                              padding: '10px 14px', background: form.businessType === t ? '#000' : '#aba7a5',
+                              padding: '10px 14px', background: form.businessType === t ? '#000' : '#f9f9f7',
                               border: `2px solid ${form.businessType === t ? '#e7b605' : '#e2e0d8'}`,
                               cursor: 'pointer', textAlign: 'left', fontFamily: 'DM Sans, sans-serif',
                               fontWeight: 600, fontSize: '13px', color: form.businessType === t ? '#e7b605' : '#5a5650',
@@ -289,7 +289,7 @@ export default function ApplyPage() {
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {industries.map(ind => (
                           <button key={ind} onClick={() => toggleMulti('referralPartnerIndustries', ind)} style={{
-                            padding: '8px 14px', background: form.referralPartnerIndustries.includes(ind) ? '#000' : '#aba7a5',
+                            padding: '8px 14px', background: form.referralPartnerIndustries.includes(ind) ? '#000' : '#f9f9f7',
                             border: `2px solid ${form.referralPartnerIndustries.includes(ind) ? '#e7b605' : '#e2e0d8'}`,
                             cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px',
                             color: form.referralPartnerIndustries.includes(ind) ? '#e7b605' : '#5a5650', transition: 'all 0.2s',
@@ -316,7 +316,7 @@ export default function ApplyPage() {
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                         {geographicFocus.map(g => (
                           <button key={g} onClick={() => toggleMulti('geographicFocus', g)} style={{
-                            padding: '10px 20px', background: form.geographicFocus.includes(g) ? '#000' : '#aba7a5',
+                            padding: '10px 20px', background: form.geographicFocus.includes(g) ? '#000' : '#f9f9f7',
                             border: `2px solid ${form.geographicFocus.includes(g) ? '#e7b605' : '#e2e0d8'}`,
                             cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '13px',
                             color: form.geographicFocus.includes(g) ? '#e7b605' : '#5a5650', transition: 'all 0.2s',
@@ -328,7 +328,7 @@ export default function ApplyPage() {
                     </div>
 
                     <button onClick={() => update('openToMatching', form.openToMatching === 'true' ? 'false' : 'true')} style={{
-                      padding: '16px 20px', background: form.openToMatching === 'true' ? '#000' : '#aba7a5',
+                      padding: '16px 20px', background: form.openToMatching === 'true' ? '#000' : '#f9f9f7',
                       border: `2px solid ${form.openToMatching === 'true' ? '#e7b605' : '#e2e0d8'}`,
                       cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
                       display: 'flex', alignItems: 'center', gap: 16,
@@ -389,7 +389,7 @@ export default function ApplyPage() {
                   </div>
 
                   {/* Pricing */}
-                  <div style={{ background: '#aba7a5', border: '2px solid #e7b605', padding: '24px', marginTop: 8 }}>
+                  <div style={{ background: '#f9f9f7', border: '2px solid #e7b605', padding: '24px', marginTop: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                       <div>
                         <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>Annual Membership</div>

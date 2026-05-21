@@ -58,7 +58,7 @@ export default function WebinarsPage() {
         </div>
       </div>
 
-      <div style={{ padding: '60px 0', background: '#aba7a5' }}>
+      <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
         <div className="container">
           {/* Members-only notice */}
           <div style={{ background: '#000', padding: '20px 32px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 16 }}>

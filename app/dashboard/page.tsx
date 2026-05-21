@@ -94,7 +94,7 @@ useEffect(() => {
 }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#aba7a5' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#f9f9f7' }}>
       {/* Sidebar */}
       <aside style={{ width: 260, background: '#000', display: 'flex', flexDirection: 'column', position: 'fixed', top: 0, left: 0, bottom: 0, zIndex: 50 }}>
         <div style={{ padding: '24px', borderBottom: '1px solid #1a1a1a' }}>
@@ -167,7 +167,7 @@ useEffect(() => {
             <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined} · <span style={{ color: '#e7b605' }}>Grow Stage</span></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button style={{ width: 40, height: 40, background: '#aba7a5', border: '1px solid #e2e0d8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
+            <button style={{ width: 40, height: 40, background: '#f9f9f7', border: '1px solid #e2e0d8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
               <Bell size={18} style={{ color: '#5a5650' }} />
               <div style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, background: '#e7b605', borderRadius: '50%' }} />
             </button>

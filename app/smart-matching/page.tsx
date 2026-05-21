@@ -69,7 +69,7 @@ export default function SmartMatchingPage() {
               </p>
             </div>
 
-            <div style={{ background: '#aba7a5', border: '1px solid #e2e0d8', padding: '48px' }}>
+            <div style={{ background: '#f9f9f7', border: '1px solid #e2e0d8', padding: '48px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
                 <div style={{ width: 48, height: 48, background: 'rgba(231,182,5,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Users size={24} style={{ color: '#e7b605' }} />
@@ -94,7 +94,7 @@ export default function SmartMatchingPage() {
       </section>
 
       {/* Matching Criteria */}
-      <section style={{ padding: '80px 0', background: '#aba7a5' }}>
+      <section style={{ padding: '80px 0', background: '#f9f9f7' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
             <div className="section-label" style={{ justifyContent: 'center' }}>Matching Criteria</div>

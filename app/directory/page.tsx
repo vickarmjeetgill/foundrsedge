@@ -90,7 +90,7 @@ export default function DirectoryPage() {
         </div>
       </div>
 
-      <div style={{ padding: '60px 0', background: '#aba7a5' }}>
+      <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
         <div className="container">
           <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
             <span style={{ color: '#9a9585', fontSize: '14px', fontWeight: 600 }}>{sorted.length} businesses found</span>
