@@ -62,7 +62,7 @@ export default function ResourcesPage() {
             {filtered.length} resource{filtered.length !== 1 ? 's' : ''} found
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+          <div className="grid-2">
             {filtered.map(r => (
               <div key={r.id} className="card" style={{ borderLeft: r.featured ? '4px solid #e7b605' : '4px solid transparent' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>

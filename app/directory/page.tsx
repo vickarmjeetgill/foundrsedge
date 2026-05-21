@@ -99,7 +99,7 @@ export default function DirectoryPage() {
             </Link>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+          <div className="grid-2">
             {sorted.length === 0 && (
               <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '32px', textAlign: 'center', color: '#5a5650' }}>
                 No businesses match your search. Try changing your search or filter.

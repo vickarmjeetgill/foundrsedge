@@ -68,7 +68,7 @@ export default function WebinarsPage() {
             </span>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+          <div className="grid-2">
             {filtered.map(w => (
               <div key={w.id} className="card" style={{ borderTop: w.upcoming ? '4px solid #e7b605' : '4px solid #333' }}>
                 <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>

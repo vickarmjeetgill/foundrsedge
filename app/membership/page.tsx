@@ -125,7 +125,7 @@ export default function MembershipPage() {
       {/* What's Included */}
       <div style={{ background: '#f9f9f7', padding: '100px 0' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <div className="grid-halves">
             <div>
               <div className="section-label">What's Included</div>
               <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(32px, 4vw, 52px)', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>
@@ -163,7 +163,7 @@ export default function MembershipPage() {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+          <div className="grid-2">
             {benefits.map((b) => (
               <Link key={b.title} href={b.href} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ height: '100%', cursor: 'pointer' }}>
@@ -241,7 +241,7 @@ export default function MembershipPage() {
       {/* FAQ */}
       <div style={{ background: '#fff', padding: '100px 0' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 80 }}>
+          <div className="grid-faq">
             <div>
               <div className="section-label">FAQ</div>
               <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(28px, 3vw, 42px)', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 16 }}>

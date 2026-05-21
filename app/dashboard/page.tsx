@@ -179,7 +179,7 @@ useEffect(() => {
 
         <div style={{ padding: '40px' }}>
           {/* Stats row */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 2, marginBottom: 32 }}>
+          <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
             {[
               { label: 'Profile Views', value: '142', change: '+18% this month', icon: User },
               { label: 'Connections Made', value: '8', change: '3 new this month', icon: Users },
@@ -197,7 +197,7 @@ useEffect(() => {
             ))}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, marginBottom: 2 }}>
+          <div className="grid-2" style={{ marginBottom: 2 }}>
             {/* Recommended Events */}
             <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -247,7 +247,7 @@ useEffect(() => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, marginTop: 2 }}>
+          <div className="grid-2" style={{ marginTop: 2 }}>
             {/* Resources */}
             <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>

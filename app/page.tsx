@@ -68,7 +68,7 @@ export default function Home() {
               A curated membership platform connecting Calgary entrepreneurs to the people, opportunities, and resources they need — at every stage of growth.
             </p>
 
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <div className="hero-btns" style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
               <Link href="/apply" className="btn-primary" style={{ fontSize: '15px' }}>
                 Apply for Membership <ArrowRight size={18} />
               </Link>
@@ -87,7 +87,7 @@ export default function Home() {
       {/* Stats */}
       <section style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}>
         <div className="container" style={{ paddingTop: 0, paddingBottom: 0 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+          <div className="grid-4">
             {stats.map((s, i) => (
               <div key={s.label} style={{
                 padding: '40px 32px', textAlign: 'center',
@@ -111,7 +111,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+          <div className="grid-3">
             {features.map((f) => (
               <Link key={f.title} href={f.href} style={{ textDecoration: 'none' }}>
                 <div className="card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -133,7 +133,7 @@ export default function Home() {
       {/* How It Works */}
       <section style={{ padding: '100px 0', background: '#f9f9f7' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <div className="grid-halves">
             <div>
               <div className="section-label">How It Works</div>
               <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(32px, 3vw, 48px)', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 32 }}>
@@ -177,7 +177,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+          <div className="grid-3">
             {testimonials.map((t, i) => (
               <div key={i} style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', padding: '40px 32px', position: 'relative', transition: 'border-color 0.2s' }}>
                 <div style={{ fontSize: '48px', color: '#e7b605', fontFamily: 'Georgia, serif', lineHeight: 1, marginBottom: 16, opacity: 0.5 }}>"</div>

@@ -70,10 +70,9 @@ export default function EventsPage() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {filtered.map(event => (
-              <div key={event.id} style={{
+              <div key={event.id} className="card-row" style={{
                 background: '#fff', border: '1px solid #e2e0d8', padding: '32px',
-                display: 'grid', gridTemplateColumns: '1fr auto',
-                gap: 24, alignItems: 'start', transition: 'all 0.2s',
+                transition: 'all 0.2s',
                 borderLeft: event.featured ? '4px solid #e7b605' : '4px solid transparent',
               }}
                 onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.08)')}

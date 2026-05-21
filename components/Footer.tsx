@@ -7,7 +7,7 @@ export default function Footer() {
   return (
     <footer style={{ background: '#000', color: '#fff', borderTop: '3px solid transparent', borderImage: 'linear-gradient(90deg,#000,#9b7011,#e7b605) 1' }}>
       <div className="container" style={{ paddingTop: 72, paddingBottom: 48 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', gap: 48, marginBottom: 64 }}>
+        <div className="grid-footer" style={{ marginBottom: 64 }}>
           {/* Brand */}
           <div>
             <Link href="/" style={{ textDecoration: 'none' }}><Logo /></Link>

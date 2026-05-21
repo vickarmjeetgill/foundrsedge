@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "founders-edge",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": false,
+      "cwd": "C:\\Users\\vicka\\Downloads\\founders-edge-nextjs\\founders-edge"
+    }
+  ]
+}

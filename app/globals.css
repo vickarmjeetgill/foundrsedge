@@ -159,7 +159,44 @@ body {
 
 .container { max-width: 1280px; margin: 0 auto; padding: 0 40px; }
 
-@media (max-width: 768px) {
-  .container { padding: 0 20px; }
-  .page-hero { padding: 100px 0 60px; }
+/* ── Responsive layout utilities ──
+   All grids use CSS auto-placement — adding more items simply
+   creates new rows automatically. No height caps, no overflow
+   hidden, so every page grows naturally as content is added.
+── */
+.grid-4      { display: grid; grid-template-columns: repeat(4, 1fr); }
+.grid-3      { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; }
+.grid-2      { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2px; }
+.grid-halves { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; }
+.grid-faq    { display: grid; grid-template-columns: 1fr 2fr; gap: 80px; }
+/* card-row: used for individual event/award list cards (content left, CTA right) */
+.card-row    { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: start; }
+/* grid-form: 2-col form field layout */
+.grid-form   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+/* grid-footer: 4-col footer layout */
+.grid-footer { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 48px; }
+
+/* Tablet — collapse 3-col to 2, reduce gaps */
+@media (max-width: 900px) {
+  .container   { padding: 0 24px; }
+  .grid-3      { grid-template-columns: repeat(2, 1fr); }
+  .grid-halves { grid-template-columns: 1fr; gap: 48px; }
+  .grid-faq    { grid-template-columns: 1fr; gap: 40px; }
+  .grid-footer { grid-template-columns: 1fr 1fr; gap: 40px; }
+}
+
+/* Mobile — single column for most grids, stack card rows */
+@media (max-width: 640px) {
+  .container   { padding: 0 16px; }
+  .page-hero   { padding: 100px 0 60px; }
+  .grid-4      { grid-template-columns: repeat(2, 1fr); }
+  .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .card-row    { grid-template-columns: 1fr; }
+  /* when card-row stacks, right-side CTA aligns left */
+  .card-row > *:last-child { text-align: left !important; justify-content: flex-start !important; }
+  /* hero CTA buttons stack vertically and stretch full width */
+  .hero-btns   { flex-direction: column; align-items: stretch; }
+  /* form grids and footer collapse to single column */
+  .grid-form   { grid-template-columns: 1fr; }
+  .grid-footer { grid-template-columns: 1fr; gap: 32px; }
 }

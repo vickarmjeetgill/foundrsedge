@@ -122,7 +122,7 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
         <Field label="Event Title"><input required style={inputStyle} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Founders Networking Night" /></Field>
         <Field label="Category"><select style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)}>{['Networking', 'Workshop', 'Webinar', 'Supper Club', 'Other'].map(c => <option key={c}>{c}</option>)}</select></Field>
         <Field label="Date"><input required style={inputStyle} type="date" value={form.date} onChange={e => set('date', e.target.value)} /></Field>
@@ -175,7 +175,7 @@ function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
         <Field label="Business Name"><input required style={inputStyle} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. NorthTech Solutions" /></Field>
         <Field label="Industry"><select style={inputStyle} value={form.industry} onChange={e => set('industry', e.target.value)}>{['Technology', 'Marketing', 'Finance', 'Legal', 'HR & People', 'Design', 'Health & Wellness', 'Construction', 'Other'].map(i => <option key={i}>{i}</option>)}</select></Field>
         <Field label="Location"><input style={inputStyle} value={form.location} onChange={e => set('location', e.target.value)} placeholder="e.g. Calgary, AB" /></Field>
@@ -231,7 +231,7 @@ function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
         <Field label="Resource Title"><input required style={inputStyle} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Alberta Innovates Grant" /></Field>
         <Field label="Category"><select style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)}>{['Funding', 'Business Services', 'Tax & Grants', 'Innovation & IP', 'Banking & Finance', 'Ecosystem', 'Export & Trade'].map(c => <option key={c}>{c}</option>)}</select></Field>
         <Field label="URL"><input required style={inputStyle} type="url" value={form.url} onChange={e => set('url', e.target.value)} placeholder="https://..." /></Field>
@@ -281,7 +281,7 @@ function AwardsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
         <Field label="Award Name"><input required style={inputStyle} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Entrepreneur of the Year" /></Field>
         <Field label="Category"><input required style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)} placeholder="e.g. Innovation, Leadership" /></Field>
         <Field label="Award Date"><input style={inputStyle} type="date" value={form.awardDate} onChange={e => set('awardDate', e.target.value)} /></Field>
@@ -331,7 +331,7 @@ function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
         <Field label="Webinar Title"><input required style={inputStyle} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Scaling Your Sales Team" /></Field>
         <Field label="Category"><select style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)}>{['Sales', 'Finance', 'Funding', 'HR & People', 'Marketing', 'Operations', 'Legal', 'Technology'].map(c => <option key={c}>{c}</option>)}</select></Field>
         <Field label="Speaker Name"><input required style={inputStyle} value={form.speaker} onChange={e => set('speaker', e.target.value)} placeholder="e.g. Jane Smith" /></Field>
@@ -383,7 +383,7 @@ function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) 
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
         <Field label="Event Title"><input required style={inputStyle} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Q1 Founders Dinner" /></Field>
         <Field label="Location"><input required style={inputStyle} value={form.location} onChange={e => set('location', e.target.value)} placeholder="e.g. Charcut Roast House, Calgary" /></Field>
         <Field label="Date"><input required style={inputStyle} type="date" value={form.date} onChange={e => set('date', e.target.value)} /></Field>

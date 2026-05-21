@@ -55,7 +55,7 @@ export default function SmartMatchingPage() {
       {/* What Is It */}
       <section style={{ padding: '80px 0', background: '#fff' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <div className="grid-halves">
             <div>
               <div className="section-label">What Is Smart Matching</div>
               <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(28px, 3vw, 44px)', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 24 }}>
@@ -103,7 +103,7 @@ export default function SmartMatchingPage() {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+          <div className="grid-2">
             {criteria.map((c) => (
               <div key={c.title} className="card" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
                 <div style={{ width: 48, height: 48, background: 'rgba(231,182,5,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -129,7 +129,7 @@ export default function SmartMatchingPage() {
             </h2>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+          <div className="grid-2">
             {howItWorks.map((step, i) => (
               <div key={step.num} style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', padding: '40px 36px' }}>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '40px', color: '#e7b605', lineHeight: 1, marginBottom: 16, opacity: 0.7 }}>{step.num}</div>

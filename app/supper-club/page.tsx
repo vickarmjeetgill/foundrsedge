@@ -37,7 +37,7 @@ export default function SupperClubPage() {
       {/* What is it */}
       <div style={{ padding: '80px 0', background: '#f9f9f7' }}>
         <div className="container">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 80, alignItems: 'center' }}>
+          <div className="grid-halves">
             <div>
               <div className="section-label">The Experience</div>
               <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '42px', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 24 }}>
@@ -87,10 +87,9 @@ export default function SupperClubPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {events.map(event => (
-              <div key={event.id} style={{
+              <div key={event.id} className="card-row" style={{
                 background: '#f9f9f7', border: '1px solid #e2e0d8',
-                padding: '36px', display: 'grid', gridTemplateColumns: '1fr auto',
-                gap: 24, alignItems: 'center',
+                padding: '36px', alignItems: 'center',
                 borderLeft: '4px solid #e7b605',
               }}>
                 <div>

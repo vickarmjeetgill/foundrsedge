@@ -78,9 +78,8 @@ export default function AwardsPage() {
               const days = daysUntil(award.deadline);
               const isUrgent = days !== null && days <= 30;
               return (
-                <div key={award.id} style={{
+                <div key={award.id} className="card-row" style={{
                   background: '#fff', border: '1px solid #e2e0d8', padding: '32px',
-                  display: 'grid', gridTemplateColumns: '1fr auto', gap: 24, alignItems: 'start',
                   borderLeft: award.featured ? '4px solid #e7b605' : '4px solid transparent',
                   transition: 'box-shadow 0.2s',
                 }}

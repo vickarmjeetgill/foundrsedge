@@ -162,7 +162,7 @@ export default function ApplyPage() {
                     <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>What does your business do? *</label>
                     <textarea className="input-field" value={form.businessDesc} onChange={e => update('businessDesc', e.target.value)} placeholder="Describe your product/service, target customers, and what makes you unique..." style={{ height: 100, resize: 'vertical' }} />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="grid-form">
                     <div>
                       <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Industry *</label>
                       <div style={{ position: 'relative' }}>
@@ -198,7 +198,7 @@ export default function ApplyPage() {
                 <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '28px', marginBottom: 8 }}>What are your priorities?</h2>
                 <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', marginBottom: 24 }}>Select all that apply. This drives your personalized recommendations and matches.</p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 32 }}>
+                <div className="grid-form" style={{ gap: 8, marginBottom: 32 }}>
                   {priorities.map(p => (
                     <button key={p} onClick={() => togglePriority(p)} style={{
                       padding: '12px 16px', background: form.priorities.includes(p) ? '#000' : '#f9f9f7',
@@ -234,7 +234,7 @@ export default function ApplyPage() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                    <div className="grid-form">
                       <div>
                         <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>Client Size</label>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -355,7 +355,7 @@ export default function ApplyPage() {
               <div>
                 <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '28px', marginBottom: 32 }}>Your contact details</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="grid-form">
                     <div>
                       <label style={{ display: 'block', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8 }}>First Name *</label>
                       <input className="input-field" value={form.firstName} onChange={e => update('firstName', e.target.value)} placeholder="Jordan" />
