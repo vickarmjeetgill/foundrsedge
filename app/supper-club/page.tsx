@@ -27,7 +27,7 @@ export default function SupperClubPage() {
             {[['12', 'Seats per dinner'], ['Monthly', 'Frequency'], ['Vetted', 'Guests only'], ['Members', 'Priority access']].map(([val, label]) => (
               <div key={label} style={{ padding: '16px 24px', border: '1px solid #1a1a1a', textAlign: 'center' }}>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '20px', color: '#e7b605' }}>{val}</div>
-                <div style={{ fontSize: '11px', color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>{label}</div>
+                <div style={{ fontSize: '11px', color: '#aba7a5', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: 4 }}>{label}</div>
               </div>
             ))}
           </div>

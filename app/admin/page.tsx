@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', color: '#fff' }}>Admin Access</div>
-            <div style={{ color: '#555', fontSize: '13px', marginTop: 2 }}>Founders Edge — Internal</div>
+            <div style={{ color: '#aba7a5', fontSize: '13px', marginTop: 2 }}>Founders Edge — Internal</div>
           </div>
         </div>
 
@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
               />
               <button type="button" onClick={() => setShowPassword(!showPassword)} style={{
                 position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)',
-                background: 'none', border: 'none', color: '#555', cursor: 'pointer', padding: 0,
+                background: 'none', border: 'none', color: '#aba7a5', cursor: 'pointer', padding: 0,
               }}>
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>

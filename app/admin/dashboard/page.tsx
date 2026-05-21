@@ -512,7 +512,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>{activeTabData.label}</div>
-              <div style={{ color: '#555', fontSize: '13px', marginTop: 2, fontFamily: 'Noto Serif, serif' }}>Add new entries or edit / delete existing ones below.</div>
+              <div style={{ color: '#aba7a5', fontSize: '13px', marginTop: 2, fontFamily: 'Noto Serif, serif' }}>Add new entries or edit / delete existing ones below.</div>
             </div>
           </div>
 

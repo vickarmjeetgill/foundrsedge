@@ -113,7 +113,7 @@ export default function MembershipPage() {
             <Link href="/apply" className="btn-primary" style={{ fontSize: '15px' }}>
               Apply for Membership <ArrowRight size={18} />
             </Link>
-            <div style={{ color: '#555', fontSize: '14px', fontFamily: 'Noto Serif, serif', fontStyle: 'italic' }}>
+            <div style={{ color: '#aba7a5', fontSize: '14px', fontFamily: 'Noto Serif, serif', fontStyle: 'italic' }}>
               Pricing TBD &nbsp;·&nbsp; Application reviewed within 5–7 business days
             </div>
           </div>
@@ -212,7 +212,7 @@ export default function MembershipPage() {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '48px', color: '#e7b605', lineHeight: 1 }}>TBD</div>
-                  <div style={{ color: '#555', fontSize: '13px', marginTop: 4 }}>+ applicable taxes</div>
+                  <div style={{ color: '#aba7a5', fontSize: '13px', marginTop: 4 }}>+ applicable taxes</div>
                 </div>
               </div>
 

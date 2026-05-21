@@ -109,7 +109,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{ marginTop: 32, color: '#555', fontSize: '14px', textAlign: 'center', fontFamily: 'Noto Serif, serif' }}>
+        <p style={{ marginTop: 32, color: '#aba7a5', fontSize: '14px', textAlign: 'center', fontFamily: 'Noto Serif, serif' }}>
           Not a member yet?{' '}
           <Link href="/apply" style={{ color: '#e7b605', fontWeight: 700, textDecoration: 'none' }}>Apply for membership →</Link>
         </p>

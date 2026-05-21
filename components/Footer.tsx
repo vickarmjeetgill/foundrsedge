@@ -61,7 +61,7 @@ export default function Footer() {
               <a href="mailto:hello@foundrsedge.com" style={{ color: '#888', fontSize: '14px', textDecoration: 'none' }}>hello@foundrsedge.com</a>
             </div>
             <div style={{ marginTop: 24 }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Annual Membership</span>
+              <span style={{ fontSize: '11px', fontWeight: 700, color: '#aba7a5', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Annual Membership</span>
               <div style={{ fontSize: '22px', fontWeight: 800, color: '#e7b605', marginTop: 6 }}>TBD</div>
             </div>
           </div>
@@ -69,12 +69,12 @@ export default function Footer() {
 
         <hr style={{ borderColor: '#1a1a1a', marginBottom: 32 }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
-          <span style={{ color: '#555', fontSize: '13px' }}>© 2025 Founders Edge Inc. All rights reserved.</span>
+          <span style={{ color: '#aba7a5', fontSize: '13px' }}>© 2025 Founders Edge Inc. All rights reserved.</span>
           <div style={{ display: 'flex', gap: 24 }}>
             {[['Privacy Policy', '#'], ['Terms of Use', '#'], ['Cookie Policy', '#']].map(([label, href]) => (
-              <a key={label} href={href} style={{ color: '#555', fontSize: '13px', textDecoration: 'none', transition: 'color 0.2s' }}
+              <a key={label} href={href} style={{ color: '#aba7a5', fontSize: '13px', textDecoration: 'none', transition: 'color 0.2s' }}
                 onMouseEnter={e => (e.currentTarget.style.color = '#e7b605')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#555')}>
+                onMouseLeave={e => (e.currentTarget.style.color = '#aba7a5')}>
                 {label}
               </a>
             ))}

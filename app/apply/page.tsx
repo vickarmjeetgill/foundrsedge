@@ -138,7 +138,7 @@ export default function ApplyPage() {
                     <div style={{ flex: 1, height: 2, background: i < step ? '#e7b605' : '#333', transition: 'background 0.3s' }} />
                   )}
                 </div>
-                <div style={{ fontSize: '11px', color: i <= step ? '#e7b605' : '#555', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s}</div>
+                <div style={{ fontSize: '11px', color: i <= step ? '#e7b605' : '#aba7a5', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{s}</div>
               </div>
             ))}
           </div>
