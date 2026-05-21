@@ -129,10 +129,10 @@ export default function LoginPage() {
           </div>
           <div style={{ padding: '24px', background: '#111', border: '1px solid #1a1a1a', borderLeft: '3px solid #e7b605' }}>
             <div style={{ fontFamily: 'Noto Serif, serif', color: '#ccc', fontSize: '15px', lineHeight: 1.7, marginBottom: 20 }}>
-              "The most focused and high-value entrepreneur community in Calgary. Worth every dollar."
+              "Member testimonial coming soon."
             </div>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: '14px' }}>Marcus T.</div>
-            <div style={{ color: '#666', fontSize: '13px' }}>CEO, NorthTech Solutions</div>
+            <div style={{ fontWeight: 700, color: '#fff', fontSize: '14px' }}>Member Name TBD</div>
+            <div style={{ color: '#666', fontSize: '13px' }}>Title, Company TBD</div>
           </div>
         </div>
       </div>
