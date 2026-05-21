@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { s3Client } from "@/lib/r2";
+import { supabase } from "@/lib/supabase";
 import { decrypt } from "@/lib/tokens";
 import { prisma } from "@/lib/prisma";
 
@@ -25,21 +24,30 @@ export async function POST(request: NextRequest) {
         // 3. Generate a unique file name to avoid collisions
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        const fileExtension = file.name.split(".").pop();
+        const fileExtension = file.name.split(".").pop() || "png";
         const uniqueFileName = `${userId}-${Date.now()}.${fileExtension}`;
-        const publicUrl = `${process.env.R2_PUBLIC_URL}/${uniqueFileName}`;
 
-        // 4. Upload to Cloudflare R2
-        await s3Client.send(
-            new PutObjectCommand({
-                Bucket: process.env.R2_BUCKET_NAME,
-                Key: uniqueFileName,
-                Body: buffer,
-                ContentType: file.type,
-            })
-        );
+        // 4. Upload to Supabase Storage (avatars bucket)
+        const { data: uploadData, error: uploadError } = await supabase.storage
+            .from("avatars")
+            .upload(uniqueFileName, buffer, {
+                contentType: file.type,
+                upsert: true,
+            });
 
-        // 5. Update user avatar in the database
+        if (uploadError) {
+            console.error("Supabase Storage error:", uploadError);
+            return NextResponse.json({ error: "Storage upload failed: " + uploadError.message }, { status: 500 });
+        }
+
+        // 5. Get the public URL of the uploaded file
+        const { data: publicUrlData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(uniqueFileName);
+
+        const publicUrl = publicUrlData.publicUrl;
+
+        // 6. Update user avatar in the database
         await prisma.user.update({
             where: {
                 id: userId
@@ -49,7 +57,7 @@ export async function POST(request: NextRequest) {
             },
         });
 
-        // 6. Return the public URL of the uploaded file
+        // 7. Return the public URL of the uploaded file
         return NextResponse.json({ success: true, url: publicUrl });
 
     } catch (error: any) {

@@ -5,6 +5,7 @@ import { Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star, Che
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import { logout } from '@/app/actions/auth';
+import { getProfile } from '@/app/actions/profile';
 
 const defaultMember = {
   name: 'Jordan Smith',
@@ -44,6 +45,7 @@ export default function DashboardPage() {
 
   const [activeNav, setActiveNav] = useState('Dashboard');
 const [member, setMember] = useState(defaultMember);
+const [userProfile, setUserProfile] = useState<any>(null);
 
 useEffect(() => {
   const loadMemberData = async () => {
@@ -91,7 +93,15 @@ useEffect(() => {
     });
   };
 
+  const loadProfile = async () => {
+    const res = await getProfile();
+    if (res.success && res.user) {
+      setUserProfile(res.user);
+    }
+  };
+
   loadMemberData();
+  loadProfile();
 }, []);
 
   return (
@@ -107,9 +117,17 @@ useEffect(() => {
         {/* Member Profile */}
         <div style={{ padding: '24px', borderBottom: '1px solid #1a1a1a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-            <div style={{ width: 44, height: 44, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
-              {member.name.charAt(0)}
-            </div>
+            {userProfile?.avatarUrl ? (
+              <img 
+                src={userProfile.avatarUrl} 
+                alt={member.name} 
+                style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }} 
+              />
+            ) : (
+              <div style={{ width: 44, height: 44, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
+                {member.name.charAt(0)}
+              </div>
+            )}
             <div>
               <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '14px', color: '#fff' }}>{member.name}</div>
               <div style={{ fontSize: '12px', color: '#888' }}>{member.business}</div>
@@ -184,17 +202,25 @@ useEffect(() => {
         {/* Top bar */}
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e0d8', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
           <div>
-            <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px' }}>Good morning, Jordan 👋</h1>
-            <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined} · <span style={{ color: '#e7b605' }}>Grow Stage</span></div>
+            <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px' }}>Good morning, {member.name.split(' ')[0]} 👋</h1>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined} · <span style={{ color: '#e7b605' }}>{member.stage} Stage</span></div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button style={{ width: 40, height: 40, background: '#f9f9f7', border: '1px solid #e2e0d8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
               <Bell size={18} style={{ color: '#5a5650' }} />
               <div style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, background: '#e7b605', borderRadius: '50%' }} />
             </button>
-            <div style={{ width: 40, height: 40, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', cursor: 'pointer' }}>
-              J
-            </div>
+            {userProfile?.avatarUrl ? (
+              <img 
+                src={userProfile.avatarUrl} 
+                alt={member.name} 
+                style={{ width: 40, height: 40, objectFit: 'cover', border: '1px solid #e2e0d8', cursor: 'pointer' }} 
+              />
+            ) : (
+              <div style={{ width: 40, height: 40, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', cursor: 'pointer' }}>
+                {member.name.charAt(0)}
+              </div>
+            )}
           </div>
         </div>
 
