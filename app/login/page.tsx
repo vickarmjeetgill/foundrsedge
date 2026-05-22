@@ -20,7 +20,11 @@ export default function LoginPage() {
     if (result?.error) {
       setError(result.error);
     } else {
-      router.push('/dashboard');
+      if (result.role === 'ADMIN') {
+        router.push('/admin/dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     }
   }
 

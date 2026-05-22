@@ -26,7 +26,10 @@ export async function login(formData: FormData) {
         // Establish the secure session cookie
         await setSession(user.id)
 
-        return { success: true }
+        return {
+            success: true,
+            role: user.role,
+        };
     } catch (error: any) {
         console.error("[login] Error:", error)
         return { error: `Server error: ${error?.message ?? "Unknown"}` }
