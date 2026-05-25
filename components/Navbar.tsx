@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ChevronDown, Lock } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 import Logo from './Logo';
 
 const navLinks = [
@@ -57,17 +57,6 @@ export default function Navbar() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="hidden-mobile">
-          <Link href="/admin" style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            color: '#aba7a5', fontFamily: 'var(--font-sans)', fontWeight: 600,
-            fontSize: '12px', textDecoration: 'none', letterSpacing: '0.05em',
-            textTransform: 'uppercase', padding: '8px 0', transition: 'color 0.2s',
-          }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#e7b605')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#aba7a5')}
-          >
-            <Lock size={12} /> Admin
-          </Link>
           <Link href="/login" style={{
             color: '#ccc', fontFamily: 'var(--font-sans)', fontWeight: 600,
             fontSize: '13px', textDecoration: 'none', letterSpacing: '0.05em',
@@ -106,7 +95,6 @@ export default function Navbar() {
             </Link>
           ))}
           <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Link href="/admin" onClick={() => setOpen(false)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, color: '#aba7a5', textAlign: 'center', padding: '12px', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '13px', textDecoration: 'none', letterSpacing: '0.05em', textTransform: 'uppercase' }}><Lock size={12} /> Admin</Link>
             <Link href="/login" style={{ color: '#ccc', textAlign: 'center', padding: '12px', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '14px', textDecoration: 'none', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Login</Link>
             <Link href="/apply" className="btn-primary" style={{ textAlign: 'center', justifyContent: 'center' }}>Apply Now</Link>
           </div>

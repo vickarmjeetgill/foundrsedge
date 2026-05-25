@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 type Tab = 'events' | 'directory' | 'resources' | 'awards' | 'webinars' | 'supperclub';
@@ -27,12 +27,12 @@ type SupperClubItem = { id: number; title: string; date: string; time: string; l
 // ─── SHARED UI ────────────────────────────────────────────────────────────────
 function SuccessBanner({ message, onClose }: { message: string; onClose: () => void }) {
   return (
-    <div style={{ background: '#0d2b0d', border: '1px solid #1a5c1a', padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+    <div style={{ background: '#f0faf2', border: '1px solid #b2dfbd', padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <CheckCircle size={16} style={{ color: '#2d7a3a', flexShrink: 0 }} />
-        <span style={{ color: '#4caf50', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px' }}>{message}</span>
+        <CheckCircle size={16} style={{ color: '#27ae60', flexShrink: 0 }} />
+        <span style={{ color: '#1e7e34', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px' }}>{message}</span>
       </div>
-      <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#4caf50', cursor: 'pointer', padding: 0 }}><X size={16} /></button>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#27ae60', cursor: 'pointer', padding: 0 }}><X size={16} /></button>
     </div>
   );
 }
@@ -40,31 +40,31 @@ function SuccessBanner({ message, onClose }: { message: string; onClose: () => v
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label style={{ display: 'block', color: '#888', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{label}</label>
+      <label style={{ display: 'block', color: '#9a9585', fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>{label}</label>
       {children}
     </div>
   );
 }
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '12px 14px', background: '#111', border: '1px solid #2a2a2a',
-  color: '#fff', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', outline: 'none',
+  width: '100%', padding: '12px 14px', background: '#fafafa', border: '1px solid #e0e0e0',
+  color: '#111', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', outline: 'none',
   boxSizing: 'border-box',
 };
 const textareaStyle: React.CSSProperties = { ...inputStyle, minHeight: 90, resize: 'vertical' };
-const checkboxRowStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontSize: '14px' };
+const checkboxRowStyle: React.CSSProperties = { display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', color: '#444', fontFamily: 'DM Sans, sans-serif', fontSize: '14px' };
 
 function ActionBtns({ onEdit, onDelete }: { onEdit: () => void; onDelete: () => void }) {
   return (
     <div style={{ display: 'flex', gap: 8 }}>
-      <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid #2a2a2a', color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+      <button onClick={onEdit} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#555', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#e7b605'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#ccc'; }}>
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#555'; }}>
         <Pencil size={12} /> Edit
       </button>
-      <button onClick={onDelete} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
+      <button onClick={onDelete} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#888'; }}>
+        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}>
         <Trash2 size={12} /> Delete
       </button>
     </div>
@@ -405,8 +405,8 @@ function ItemTable<T extends { id: number }>({ items, columns, getRow, onEdit, o
   const [collapsed, setCollapsed] = useState(false);
   if (items.length === 0) return null;
   return (
-    <div style={{ marginTop: 40, borderTop: '1px solid #1a1a1a', paddingTop: 32 }}>
-      <button type="button" onClick={() => setCollapsed(!collapsed)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginBottom: 16, padding: 0 }}>
+    <div style={{ marginTop: 40, borderTop: '1px solid #e2e0d8', paddingTop: 32 }}>
+      <button type="button" onClick={() => setCollapsed(!collapsed)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', color: '#444', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '14px', cursor: 'pointer', marginBottom: 16, padding: 0 }}>
         {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
         {items.length} existing {items.length === 1 ? 'entry' : 'entries'}
       </button>
@@ -414,20 +414,20 @@ function ItemTable<T extends { id: number }>({ items, columns, getRow, onEdit, o
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'DM Sans, sans-serif', fontSize: '13px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #2a2a2a' }}>
+              <tr style={{ borderBottom: '1px solid #e2e0d8', background: '#fafaf8' }}>
                 {columns.map(col => (
-                  <th key={col} style={{ padding: '10px 14px', textAlign: 'left', color: '#666', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px', whiteSpace: 'nowrap' }}>{col}</th>
+                  <th key={col} style={{ padding: '10px 14px', textAlign: 'left', color: '#9a9585', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px', whiteSpace: 'nowrap' }}>{col}</th>
                 ))}
-                <th style={{ padding: '10px 14px', textAlign: 'right', color: '#666', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px' }}>Actions</th>
+                <th style={{ padding: '10px 14px', textAlign: 'right', color: '#9a9585', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', fontSize: '11px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, idx) => {
                 const row = getRow(item);
                 return (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #1a1a1a', background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)' }}>
+                  <tr key={item.id} style={{ borderBottom: '1px solid #e2e0d8', background: idx % 2 === 0 ? '#fff' : '#fafaf8' }}>
                     {row.map((cell, ci) => (
-                      <td key={ci} style={{ padding: '12px 14px', color: ci === 0 ? '#fff' : '#888', fontWeight: ci === 0 ? 600 : 400, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cell}</td>
+                      <td key={ci} style={{ padding: '12px 14px', color: ci === 0 ? '#111' : '#9a9585', fontWeight: ci === 0 ? 600 : 400, maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cell}</td>
                     ))}
                     <td style={{ padding: '12px 14px', textAlign: 'right' }}>
                       <ActionBtns onEdit={() => onEdit(item)} onDelete={() => onDelete(item.id)} />
@@ -468,7 +468,7 @@ export default function AdminDashboard() {
   const activeTabData = tabs.find(t => t.id === activeTab)!;
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080808', color: '#fff' }}>
+    <div style={{ minHeight: '100vh', background: '#f9f9f7', color: '#111' }}>
       {/* Top Bar */}
       <div style={{ background: '#000', borderBottom: '1px solid #1a1a1a', position: 'sticky', top: 0, zIndex: 100 }}>
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
@@ -485,10 +485,24 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Secondary Nav */}
+      <div style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', gap: 0 }}>
+          <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#e7b605', borderBottom: '2px solid #e7b605', transition: 'all 0.2s' }}>
+            <LayoutDashboard size={14} /> Content Manager
+          </Link>
+          <Link href="/admin/events" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <ClipboardList size={14} /> Review Submissions
+          </Link>
+        </div>
+      </div>
+
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
         <div style={{ marginBottom: 36 }}>
-          <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', letterSpacing: '-0.02em', marginBottom: 6 }}>Content Manager</h1>
-          <p style={{ color: '#666', fontFamily: 'Noto Serif, serif', fontSize: '15px' }}>Add, edit, and remove content across the Founders Edge platform.</p>
+          <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', letterSpacing: '-0.02em', marginBottom: 6, color: '#111' }}>Content Manager</h1>
+          <p style={{ color: '#9a9585', fontFamily: 'Noto Serif, serif', fontSize: '15px' }}>Add, edit, and remove content across the Founders Edge platform.</p>
         </div>
 
         {/* Tab Nav */}
@@ -497,7 +511,7 @@ export default function AdminDashboard() {
             const Icon = tab.icon;
             const isActive = tab.id === activeTab;
             return (
-              <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSuccessMsg(''); }} style={{ padding: '12px 20px', background: isActive ? '#e7b605' : '#111', border: `1px solid ${isActive ? '#e7b605' : '#1a1a1a'}`, color: isActive ? '#000' : '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}>
+              <button key={tab.id} onClick={() => { setActiveTab(tab.id); setSuccessMsg(''); }} style={{ padding: '12px 20px', background: isActive ? '#000' : '#fff', border: `1px solid ${isActive ? '#000' : '#e2e0d8'}`, color: isActive ? '#e7b605' : '#9a9585', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.2s' }}>
                 <Icon size={15} />{tab.label}
               </button>
             );
@@ -505,14 +519,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Panel */}
-        <div style={{ background: '#0d0d0d', border: '1px solid #1a1a1a', padding: '40px' }}>
+        <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '40px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-            <div style={{ width: 40, height: 40, background: 'rgba(231,182,5,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 40, height: 40, background: 'rgba(231,182,5,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <activeTabData.icon size={18} style={{ color: '#e7b605' }} />
             </div>
             <div>
-              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>{activeTabData.label}</div>
-              <div style={{ color: '#aba7a5', fontSize: '13px', marginTop: 2, fontFamily: 'Noto Serif, serif' }}>Add new entries or edit / delete existing ones below.</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px', color: '#111' }}>{activeTabData.label}</div>
+              <div style={{ color: '#9a9585', fontSize: '13px', marginTop: 2, fontFamily: 'Noto Serif, serif' }}>Add new entries or edit / delete existing ones below.</div>
             </div>
           </div>
 
