@@ -8,7 +8,7 @@ import Logo from '@/components/Logo';
 type EventStatus = 'approved' | 'pending' | 'rejected';
 
 type AdminEvent = {
-  id: number;
+  id: string | number;
   title: string;
   category: string;
   host: string;
@@ -49,12 +49,12 @@ const statusColors: Record<EventStatus, { bg: string; color: string; label: stri
 
 export default function AdminEventsPage() {
   const router = useRouter();
-  const [events, setEvents] = useState<AdminEvent[]>(initialEvents);
+  const [events, setEvents] = useState<AdminEvent[]>([]);
   const [tab, setTab] = useState<Tab>('All');
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,28 +66,110 @@ export default function AdminEventsPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: AdminEvent[] = dbData.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            category: e.category,
+            host: e.host || "Member",
+            hostEmail: "member@foundersedge.com",
+            date: e.date,
+            time: e.time,
+            duration: "2 hrs",
+            capacity: 50,
+            price: e.price,
+            submittedDate: new Date(e.created_At || Date.now()).toLocaleDateString(),
+            status: e.status.toLowerCase() as EventStatus,
+            featured: e.featured || false,
+            isOnline: e.location.toLowerCase().includes("online"),
+            location: e.location,
+            description: e.description,
+            tags: [e.category]
+          }));
+          setEvents([...initialEvents, ...mapped]);
+        }
+      } catch (err) {
+        console.error("Failed to load admin events:", err);
+      }
+    }
+    if (authChecked) {
+      loadEvents();
+    }
+  }, [authChecked]);
+
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   }
 
-  function approve(id: number) {
+  async function approve(id: string | number) {
+    if (typeof id === 'string') {
+      try {
+        const res = await fetch(`/api/events/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'APPROVED' })
+        });
+        if (!res.ok) {
+          showToast('Failed to update event status');
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
     setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'approved' } : e));
     showToast('Event approved ✓');
   }
 
-  function reject(id: number) {
+  async function reject(id: string | number) {
+    if (typeof id === 'string') {
+      try {
+        const res = await fetch(`/api/events/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'REJECTED' })
+        });
+        if (!res.ok) {
+          showToast('Failed to update event status');
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
     setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'rejected', featured: false } : e));
     showToast('Event rejected.');
   }
 
-  function toggleFeatured(id: number) {
-    setEvents(prev => {
-      const ev = prev.find(e => e.id === id);
-      const nowFeatured = ev ? !ev.featured : false;
-      showToast(nowFeatured ? 'Event featured ✓' : 'Event unfeatured.');
-      return prev.map(e => e.id === id ? { ...e, featured: !e.featured } : e);
-    });
+  async function toggleFeatured(id: string | number) {
+    const ev = events.find(e => e.id === id);
+    if (!ev) return;
+    const nowFeatured = !ev.featured;
+
+    if (typeof id === 'string') {
+      try {
+        const res = await fetch(`/api/events/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ featured: nowFeatured })
+        });
+        if (!res.ok) {
+          showToast('Failed to update feature status');
+          return;
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, featured: nowFeatured } : e));
+    showToast(nowFeatured ? 'Event featured ✓' : 'Event unfeatured.');
   }
 
   const filtered = events.filter(e => {

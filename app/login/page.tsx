@@ -21,6 +21,7 @@ export default function LoginPage() {
       setError(result.error);
     } else {
       if (result.role === 'ADMIN') {
+        localStorage.setItem('fe_admin', 'true');
         router.push('/admin/dashboard');
       } else {
         router.push('/dashboard');

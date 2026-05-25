@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Calendar, MapPin, Clock, Search, Users, ExternalLink, ChevronRight, Wifi, Star } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
@@ -69,8 +69,46 @@ export default function EventsPage() {
   const [dateFilter, setDateFilter] = useState('All Dates');
   const [locationFilter, setLocationFilter] = useState('All Locations');
   const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [dbEvents, setDbEvents] = useState<any[]>([]);
 
-  const filtered = events
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const data = await res.json();
+          setDbEvents(data);
+        }
+      } catch (err) {
+        console.error('Failed to load DB events:', err);
+      }
+    }
+    loadEvents();
+  }, []);
+
+  const mappedDbEvents: Event[] = dbEvents.map((e: any) => ({
+    id: e.id,
+    title: e.title,
+    desc: e.description,
+    category: e.category,
+    date: e.date,
+    time: e.time,
+    duration: '2 hrs',
+    location: e.location,
+    isOnline: e.location.toLowerCase().includes('online') || e.location.toLowerCase().includes('zoom'),
+    price: e.price,
+    host: e.host,
+    hostBio: 'Member submitted event.',
+    capacity: 50,
+    attendees: e.attendees || 0,
+    featured: e.featured || false,
+    status: 'approved',
+    tags: [e.category],
+  }));
+
+  const allEvents = [...events, ...mappedDbEvents];
+
+  const filtered = allEvents
     .filter(e => e.status === 'approved')
     .filter(e => {
       const q = search.toLowerCase();

@@ -78,8 +78,11 @@ export default function EventSubmitPage() {
     }));
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  const [errorMsg, setErrorMsg] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setErrorMsg('');
     const errs = validateForm(form);
     if (Object.keys(errs).length > 0) {
       setErrors(errs);
@@ -88,7 +91,36 @@ export default function EventSubmitPage() {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    setSubmitted(true);
+
+    try {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: form.title,
+          description: form.description,
+          date: form.date,
+          time: form.time,
+          location: form.location,
+          category: form.category,
+          price: form.price,
+          host: form.hostName,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setErrorMsg(data.error || 'Failed to submit event.');
+        return;
+      }
+
+      setSubmitted(true);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg('An error occurred during submission.');
+    }
   }
 
   const fieldStyle = (field: keyof FormData) => ({
@@ -357,6 +389,13 @@ export default function EventSubmitPage() {
               </label>
               {errors.agreeGuidelines && <ErrorMsg msg={errors.agreeGuidelines} />}
             </div>
+
+            {errorMsg && (
+              <div style={{ marginBottom: 20, padding: 12, background: 'rgba(231,182,5,0.1)', border: '1px solid #e7b605', color: '#9b7011', fontFamily: 'DM Sans, sans-serif', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertCircle size={16} />
+                {errorMsg}
+              </div>
+            )}
 
             {/* Submit */}
             <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '15px', padding: '18px' }}>
