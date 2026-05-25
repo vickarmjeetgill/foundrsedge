@@ -171,7 +171,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             </div>
 
             {/* Right: Booking widget */}
-            <div style={{ position: 'sticky', top: 100 }}>
+            <div className="booking-widget-sticky" style={{ position: 'sticky', top: 100 }}>
               <div style={{ background: '#fff', border: '1px solid #e2e0d8', borderTop: '4px solid #000' }}>
                 <div style={{ padding: '32px', borderBottom: '1px solid #e2e0d8' }}>
                   <div style={{

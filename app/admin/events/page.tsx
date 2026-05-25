@@ -122,7 +122,7 @@ export default function AdminEventsPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <Link href="/" style={{ textDecoration: 'none' }}><Logo size="sm" /></Link>
           <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
+          <span className="admin-panel-label" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
         <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/admin'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
           <LogOut size={14} /> Sign Out
@@ -296,7 +296,7 @@ export default function AdminEventsPage() {
                     </div>
 
                     {/* Details grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px 32px', marginBottom: 24 }}>
+                    <div className="admin-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px 32px', marginBottom: 24 }}>
                       <DetailField icon={<Clock size={13} />} label="Time" value={`${event.date} at ${event.time}`} />
                       <DetailField icon={<Clock size={13} />} label="Duration" value={event.duration} />
                       <DetailField icon={<Users size={13} />} label="Capacity" value={`${event.capacity} attendees`} />

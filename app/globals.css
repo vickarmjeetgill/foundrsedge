@@ -199,4 +199,18 @@ body {
   /* form grids and footer collapse to single column */
   .grid-form   { grid-template-columns: 1fr; }
   .grid-footer { grid-template-columns: 1fr; gap: 32px; }
+  /* admin detail expand panel: 3-col → 1-col */
+  .admin-detail-grid { grid-template-columns: 1fr !important; }
+  /* event detail booking widget: disable sticky on mobile */
+  .booking-widget-sticky { position: static !important; }
+  /* admin top bar: hide "Admin Panel" label to save space */
+  .admin-panel-label { display: none !important; }
+  /* events filter bar: make selects full width */
+  .filter-bar-inner { flex-direction: column !important; }
+  .filter-bar-inner > * { width: 100% !important; min-width: unset !important; }
+}
+
+@media (max-width: 900px) {
+  /* admin detail expand panel: 3-col → 2-col on tablet */
+  .admin-detail-grid { grid-template-columns: repeat(2, 1fr) !important; }
 }

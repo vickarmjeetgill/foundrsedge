@@ -124,7 +124,7 @@ export default function EventsPage() {
       {/* Sticky Filter Bar */}
       <div style={{ background: '#fff', borderBottom: '1px solid #e2e0d8', position: 'sticky', top: 72, zIndex: 50 }}>
         <div className="container" style={{ paddingTop: 20, paddingBottom: 20 }}>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div className="filter-bar-inner" style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Search */}
             <div style={{ position: 'relative', flex: '1', minWidth: 200 }}>
               <Search size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#9a9585' }} />

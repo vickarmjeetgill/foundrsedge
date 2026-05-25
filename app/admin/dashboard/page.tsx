@@ -470,24 +470,22 @@ export default function AdminDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#f9f9f7', color: '#111' }}>
       {/* Top Bar */}
-      <div style={{ background: '#000', borderBottom: '1px solid #1a1a1a', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-            <Link href="/" style={{ textDecoration: 'none' }}><Logo size="sm" /></Link>
-            <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
-            <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
-          </div>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#e7b605'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#888'; }}>
-            <LogOut size={14} /> Sign Out
-          </button>
+      <div style={{ background: '#000', borderBottom: '1px solid #1a1a1a', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}><Logo size="sm" /></Link>
+          <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
+          <span className="admin-panel-label" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
+        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer', transition: 'all 0.2s' }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#e7b605'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = '#2a2a2a'; e.currentTarget.style.color = '#888'; }}>
+          <LogOut size={14} /> Sign Out
+        </button>
       </div>
 
       {/* Secondary Nav */}
       <div style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 32px', display: 'flex', gap: 0 }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', display: 'flex', gap: 0 }}>
           <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#e7b605', borderBottom: '2px solid #e7b605', transition: 'all 0.2s' }}>
             <LayoutDashboard size={14} /> Content Manager
           </Link>
@@ -499,7 +497,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 32px' }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '40px 40px' }}>
         <div style={{ marginBottom: 36 }}>
           <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', letterSpacing: '-0.02em', marginBottom: 6, color: '#111' }}>Content Manager</h1>
           <p style={{ color: '#9a9585', fontFamily: 'Noto Serif, serif', fontSize: '15px' }}>Add, edit, and remove content across the Founders Edge platform.</p>
