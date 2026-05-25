@@ -8,11 +8,11 @@ import { logout } from '@/app/actions/auth';
 import { getProfile } from '@/app/actions/profile';
 
 const defaultMember = {
-  name: 'Jordan Smith',
-  business: 'NorthTech Solutions',
-  stage: 'Grow',
-  industry: 'Technology',
-  joined: 'Jan 2025',
+  name: 'Loading User',
+  business: 'Loading Business',
+  stage: 'Member',
+  industry: 'Member',
+  joined: 'May 2026',
   profileCompletion: 85,
 };
 
@@ -44,14 +44,14 @@ const navItems = [
 export default function DashboardPage() {
 
   const [activeNav, setActiveNav] = useState('Dashboard');
-const [member, setMember] = useState(defaultMember);
-const [userProfile, setUserProfile] = useState<any>(null);
+  const [member, setMember] = useState(defaultMember);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
-useEffect(() => {
-  const loadMemberData = async () => {
-    const { data, error } = await supabase
-      .from('businesses')
-      .select(`
+  useEffect(() => {
+    const loadMemberData = async () => {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select(`
         business_name,
         business_type,
         created_at,
@@ -62,47 +62,55 @@ useEffect(() => {
           industry
         )
       `)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Dashboard data error:', error.message);
-      return;
-    }
-    if (!data) {
-  return;
-}
+      if (error) {
+        console.error('Dashboard data error:', error.message);
+        return;
+      }
+      if (!data) {
+        return;
+      }
 
-    const memberData = Array.isArray(data.members)
-      ? data.members[0]
-      : data.members;
+      const memberData = Array.isArray(data.members)
+        ? data.members[0]
+        : data.members;
 
-    setMember({
-      name: `${memberData?.first_name ?? ''} ${memberData?.last_name ?? ''}`.trim() || 'Member',
-      business: data.business_name ?? 'Business',
-      stage: memberData?.stage ?? 'N/A',
-      industry: memberData?.industry ?? 'N/A',
-      joined: data.created_at
-        ? new Date(data.created_at).toLocaleDateString('en-US', {
+      setMember({
+        name: `${memberData?.first_name ?? ''} ${memberData?.last_name ?? ''}`.trim() || 'Member',
+        business: data.business_name ?? 'Business',
+        stage: memberData?.stage ?? 'N/A',
+        industry: memberData?.industry ?? 'N/A',
+        joined: data.created_at
+          ? new Date(data.created_at).toLocaleDateString('en-US', {
             month: 'short',
             year: 'numeric',
           })
-        : 'N/A',
-      profileCompletion: 85,
-    });
-  };
+          : 'N/A',
+        profileCompletion: 85,
+      });
+    };
 
-  const loadProfile = async () => {
-    const res = await getProfile();
-    if (res.success && res.user) {
-      setUserProfile(res.user);
-    }
-  };
+    const loadProfile = async () => {
+      const res = await getProfile();
+      if (res.success && res.user) {
+        setUserProfile(res.user);
 
-  loadMemberData();
-  loadProfile();
-}, []);
+        setMember(prev => ({
+          ...prev,
+          name: (res.user as any).name || prev.name,
+          business: 'Founders Edge Member',
+          stage: (res.user as any).role || prev.stage,
+          industry: 'Member',
+        }));
+      }
+    };
+
+    // loadMemberData();
+    loadProfile();
+  }, []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f9f9f7' }}>
@@ -118,10 +126,10 @@ useEffect(() => {
         <div style={{ padding: '24px', borderBottom: '1px solid #1a1a1a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             {userProfile?.avatarUrl ? (
-              <img 
-                src={userProfile.avatarUrl} 
-                alt={member.name} 
-                style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }} 
+              <img
+                src={userProfile.avatarUrl}
+                alt={member.name}
+                style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }}
               />
             ) : (
               <div style={{ width: 44, height: 44, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
@@ -171,19 +179,19 @@ useEffect(() => {
           <Link href="/dashboard/settings" style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', textDecoration: 'none', color: '#666', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px' }}>
             <Settings size={16} /> Settings
           </Link>
-          <button 
+          <button
             onClick={async () => {
               await logout();
             }}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 12, 
-              padding: '12px 24px', 
-              textDecoration: 'none', 
-              color: '#666', 
-              fontFamily: 'DM Sans, sans-serif', 
-              fontWeight: 600, 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 24px',
+              textDecoration: 'none',
+              color: '#666',
+              fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 600,
               fontSize: '14px',
               background: 'none',
               border: 'none',
@@ -211,10 +219,10 @@ useEffect(() => {
               <div style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, background: '#e7b605', borderRadius: '50%' }} />
             </button>
             {userProfile?.avatarUrl ? (
-              <img 
-                src={userProfile.avatarUrl} 
-                alt={member.name} 
-                style={{ width: 40, height: 40, objectFit: 'cover', border: '1px solid #e2e0d8', cursor: 'pointer' }} 
+              <img
+                src={userProfile.avatarUrl}
+                alt={member.name}
+                style={{ width: 40, height: 40, objectFit: 'cover', border: '1px solid #e2e0d8', cursor: 'pointer' }}
               />
             ) : (
               <div style={{ width: 40, height: 40, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', cursor: 'pointer' }}>

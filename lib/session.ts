@@ -1,7 +1,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { encrypt } from './tokens';
+import { encrypt, decrypt } from './tokens';
 import { prisma } from './prisma';
+
 
 /**
  * Sets secure access (session) and refresh cookies, and stores the refresh token in the database.
@@ -63,4 +64,20 @@ export async function deleteSession() {
 export async function logout() {
     await deleteSession();
     redirect('/login');
+}
+export async function getCurrentUser() {
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get('session')?.value;
+
+    if (!sessionCookie) return null;
+
+    const payload = await decrypt(sessionCookie);
+
+    if (!payload || !payload.userId) return null;
+
+    const user = await prisma.user.findUnique({
+        where: { id: payload.userId as string },
+    });
+
+    return user;
 }
