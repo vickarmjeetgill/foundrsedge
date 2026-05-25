@@ -451,13 +451,13 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && localStorage.getItem('fe_admin') !== 'true') {
-      router.replace('/admin');
+      router.replace('/');
     }
   }, [router]);
 
   function handleLogout() {
     localStorage.removeItem('fe_admin');
-    router.push('/admin');
+    router.push('/');
   }
 
   function showSuccess(msg: string) {

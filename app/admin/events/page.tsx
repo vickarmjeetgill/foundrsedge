@@ -59,7 +59,7 @@ export default function AdminEventsPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (localStorage.getItem('fe_admin') !== 'true') {
-        router.push('/admin');
+        router.push('/');
       } else {
         setAuthChecked(true);
       }
@@ -124,7 +124,7 @@ export default function AdminEventsPage() {
           <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
           <span className="admin-panel-label" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
-        <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/admin'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
           <LogOut size={14} /> Sign Out
         </button>
       </div>
