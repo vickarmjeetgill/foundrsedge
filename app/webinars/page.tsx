@@ -3,11 +3,7 @@ import { useState } from 'react';
 import { Video, Calendar, Clock, Users, Lock, Play } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 
-const webinars = [
-  { id: 1, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Sales', upcoming: true, replay: false, desc: 'Webinar description coming soon.' },
-  { id: 2, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Finance', upcoming: true, replay: false, desc: 'Webinar description coming soon.' },
-  { id: 3, title: 'Webinar Title TBD', speaker: 'Speaker Name TBD', speakerRole: 'Title TBD', date: 'Date TBD', time: 'Time TBD', duration: 'TBD', attendees: 0, category: 'Funding', upcoming: false, replay: true, desc: 'Webinar description coming soon.' },
-];
+const webinars: { id: number; title: string; speaker: string; speakerRole: string; date: string; time: string; duration: string; attendees: number; category: string; upcoming: boolean; replay: boolean; desc: string }[] = [];
 
 const categories = ['All', 'Sales', 'Finance', 'Funding', 'HR & People', 'Marketing'];
 
@@ -67,6 +63,14 @@ export default function WebinarsPage() {
               Webinar access is included with your Founders Edge membership. <a href="/apply" style={{ color: '#e7b605', fontWeight: 700 }}>Apply to become a member →</a>
             </span>
           </div>
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 40px', background: '#fff', border: '1px solid #e2e0d8' }}>
+              <div style={{ fontSize: '40px', marginBottom: 16 }}>🎙️</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '18px', marginBottom: 8, color: '#2a2820' }}>No webinars scheduled yet</div>
+              <div style={{ color: '#9a9585', fontFamily: 'Noto Serif, serif' }}>Upcoming webinars will be announced here. Check back soon.</div>
+            </div>
+          )}
 
           <div className="grid-2">
             {filtered.map(w => (

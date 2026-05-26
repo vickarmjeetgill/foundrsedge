@@ -1,14 +1,10 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { BookOpen, ExternalLink, Search, ChevronRight, Star } from 'lucide-react';
+import { ExternalLink, Search } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 
-const resources = [
-  { id: 1, title: 'Resource Name TBD', category: 'Business Services', desc: 'Resource description coming soon.', url: '#', tags: ['Tag TBD'], featured: true },
-  { id: 2, title: 'Resource Name TBD', category: 'Funding', desc: 'Resource description coming soon.', url: '#', tags: ['Tag TBD'], featured: true },
-  { id: 3, title: 'Resource Name TBD', category: 'Ecosystem', desc: 'Resource description coming soon.', url: '#', tags: ['Tag TBD'], featured: false },
-];
+const resources: { id: number; title: string; category: string; desc: string; url: string; tags: string[]; featured: boolean }[] = [];
 
 const categories = ['All Categories', 'Funding', 'Business Services', 'Tax & Grants', 'Innovation & IP', 'Banking & Finance', 'Ecosystem', 'Export & Trade'];
 
@@ -61,6 +57,14 @@ export default function ResourcesPage() {
           <div style={{ marginBottom: 20, color: '#9a9585', fontSize: '14px', fontWeight: 600 }}>
             {filtered.length} resource{filtered.length !== 1 ? 's' : ''} found
           </div>
+
+          {filtered.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 40px', background: '#fff', border: '1px solid #e2e0d8' }}>
+              <div style={{ fontSize: '40px', marginBottom: 16 }}>📚</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '18px', marginBottom: 8, color: '#2a2820' }}>No resources yet</div>
+              <div style={{ color: '#9a9585', fontFamily: 'Noto Serif, serif' }}>Resources will be added by our team shortly. Check back soon.</div>
+            </div>
+          )}
 
           <div className="grid-2">
             {filtered.map(r => (

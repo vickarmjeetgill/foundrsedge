@@ -3,11 +3,7 @@ import Link from 'next/link';
 import { Users, MapPin, Calendar, Lock, Star, ArrowRight } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 
-const events = [
-  { id: 1, date: 'Date TBD', venue: 'Venue TBD', location: 'Calgary', theme: 'Theme TBD', spots: 0, total: 12, waitlist: false, desc: 'Dinner description coming soon.' },
-  { id: 2, date: 'Date TBD', venue: 'Venue TBD', location: 'Calgary', theme: 'Theme TBD', spots: 0, total: 12, waitlist: false, desc: 'Dinner description coming soon.' },
-  { id: 3, date: 'Date TBD', venue: 'Venue TBD', location: 'Calgary', theme: 'Theme TBD', spots: 0, total: 12, waitlist: false, desc: 'Dinner description coming soon.' },
-];
+const events: { id: number; date: string; venue: string; location: string; theme: string; spots: number; total: number; waitlist: boolean; desc: string }[] = [];
 
 export default function SupperClubPage() {
   return (
@@ -84,6 +80,14 @@ export default function SupperClubPage() {
         <div className="container">
           <div className="section-label">Upcoming Dinners</div>
           <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '42px', letterSpacing: '-0.02em', marginBottom: 48 }}>Reserve Your Seat</h2>
+
+          {events.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 40px', background: '#f9f9f7', border: '1px solid #e2e0d8', marginBottom: 48 }}>
+              <div style={{ fontSize: '40px', marginBottom: 16 }}>🍽️</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '18px', marginBottom: 8, color: '#2a2820' }}>No dinners scheduled yet</div>
+              <div style={{ color: '#9a9585', fontFamily: 'Noto Serif, serif' }}>Upcoming Supper Club dates will be posted here. Members receive first notice.</div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {events.map(event => (

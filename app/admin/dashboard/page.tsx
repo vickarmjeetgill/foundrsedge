@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList, Tag } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 type Tab = 'events' | 'directory' | 'resources' | 'awards' | 'webinars' | 'supperclub';
@@ -594,7 +594,17 @@ export default function AdminDashboard() {
           <Link href="/admin/events" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
             onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
-            <ClipboardList size={14} /> Review Submissions
+            <ClipboardList size={14} /> Review Events
+          </Link>
+          <Link href="/admin/offers" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Tag size={14} /> Review Offers
+          </Link>
+          <Link href="/admin/awards" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Trophy size={14} /> Review Awards
           </Link>
         </div>
       </div>

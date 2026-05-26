@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Search, CheckCircle, XCircle, Star, LayoutDashboard, ClipboardList, Calendar, MapPin, LogOut, ChevronDown, ChevronUp, Clock, Users, DollarSign, Mail, Tag } from 'lucide-react';
+import { Search, CheckCircle, XCircle, Star, LayoutDashboard, ClipboardList, Calendar, MapPin, LogOut, ChevronDown, ChevronUp, Clock, Users, DollarSign, Mail, Tag, Trophy } from 'lucide-react';
 import Logo from '@/components/Logo';
 
 type EventStatus = 'approved' | 'pending' | 'rejected';
@@ -203,7 +203,17 @@ export default function AdminEventsPage() {
             <LayoutDashboard size={14} /> Content Manager
           </Link>
           <Link href="/admin/events" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#e7b605', borderBottom: '2px solid #e7b605', transition: 'all 0.2s' }}>
-            <ClipboardList size={14} /> Review Submissions
+            <ClipboardList size={14} /> Review Events
+          </Link>
+          <Link href="/admin/offers" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Tag size={14} /> Review Offers
+          </Link>
+          <Link href="/admin/awards" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Trophy size={14} /> Review Awards
           </Link>
         </div>
       </div>
@@ -234,17 +244,16 @@ export default function AdminEventsPage() {
                 onClick={() => setTab(t)}
                 style={{
                   padding: '8px 18px', border: 'none', cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px',
-                  letterSpacing: '0.05em', textTransform: 'uppercase', transition: 'all 0.15s',
+                  fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px',
+                  letterSpacing: '0.05em', textTransform: 'uppercase', transition: 'all 0.2s',
                   background: tab === t ? '#000' : 'transparent',
                   color: tab === t ? '#e7b605' : '#9a9585',
-                  borderRadius: 2,
                 }}
               >
                 {t}
                 {t !== 'All' && (
-                  <span style={{ marginLeft: 6, background: tab === t ? 'rgba(231,182,5,0.2)' : '#f0efe9', color: tab === t ? '#e7b605' : '#9a9585', padding: '1px 6px', borderRadius: 10, fontSize: '11px' }}>
-                    {t === 'Pending' ? stats.pending : t === 'Approved' ? stats.approved : stats.rejected}
+                  <span style={{ marginLeft: 6, fontSize: '11px', opacity: 0.7 }}>
+                    ({t === 'Pending' ? stats.pending : t === 'Approved' ? stats.approved : stats.rejected})
                   </span>
                 )}
               </button>

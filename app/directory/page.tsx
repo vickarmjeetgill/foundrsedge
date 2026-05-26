@@ -1,14 +1,10 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Star, TrendingUp, ExternalLink, Zap, Filter } from 'lucide-react';
+import { Search, MapPin, Star, TrendingUp, Zap } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 
-const businesses = [
-  { id: 1, name: 'Business Name TBD', industry: 'Technology', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: true, tags: ['Tag TBD'] },
-  { id: 2, name: 'Business Name TBD', industry: 'Marketing', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: true, boosted: false, tags: ['Tag TBD'] },
-  { id: 3, name: 'Business Name TBD', industry: 'Finance', location: 'Calgary', desc: 'Business description coming soon.', rating: 0, reviews: 0, featured: false, boosted: false, tags: ['Tag TBD'] },
-];
+const businesses: { id: number; name: string; industry: string; location: string; desc: string; rating: number; reviews: number; featured: boolean; boosted: boolean; tags: string[] }[] = [];
 
 const industries = [
   'All Industries',
@@ -99,12 +95,19 @@ export default function DirectoryPage() {
             </Link>
           </div>
 
-          <div className="grid-2">
-            {sorted.length === 0 && (
-              <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '32px', textAlign: 'center', color: '#5a5650' }}>
-                No businesses match your search. Try changing your search or filter.
+          {sorted.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '80px 40px', background: '#fff', border: '1px solid #e2e0d8', marginBottom: 2 }}>
+              <div style={{ fontSize: '40px', marginBottom: 16 }}>🏢</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '18px', marginBottom: 8, color: '#2a2820' }}>
+                {search || industry !== 'All Industries' || showFeatured ? 'No businesses match your search.' : 'No businesses listed yet'}
               </div>
-            )}
+              <div style={{ color: '#9a9585', fontFamily: 'Noto Serif, serif' }}>
+                {search || industry !== 'All Industries' || showFeatured ? 'Try adjusting your filters.' : 'Member businesses will appear here once listed.'}
+              </div>
+            </div>
+          )}
+
+          <div className="grid-2">
             {sorted.map(biz => (
               <div key={biz.id} className="card" style={{
                 borderLeft: biz.boosted ? '4px solid #e7b605' : biz.featured ? '4px solid #9b7011' : '4px solid transparent',
