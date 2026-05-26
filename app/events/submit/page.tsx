@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
@@ -61,7 +61,7 @@ function validateForm(form: FormData): FormErrors {
   return errors;
 }
 
-export default function EventSubmitPage() {
+function EventSubmitContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
 
@@ -482,5 +482,13 @@ function ErrorMsg({ msg }: { msg: string }) {
       <AlertCircle size={12} />
       {msg}
     </div>
+  );
+}
+
+export default function EventSubmitPage() {
+  return (
+    <Suspense fallback={null}>
+      <EventSubmitContent />
+    </Suspense>
   );
 }
