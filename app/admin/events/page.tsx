@@ -56,6 +56,12 @@ export default function AdminEventsPage() {
     }
   }, [router]);
 
+  // Persist approved events to localStorage so Content Manager can read them
+  function persistApproved(evts: AdminEvent[]) {
+    const approved = evts.filter(e => e.status === 'approved');
+    localStorage.setItem('fe_approved_events', JSON.stringify(approved));
+  }
+
   useEffect(() => {
     async function loadEvents() {
       try {
@@ -82,6 +88,7 @@ export default function AdminEventsPage() {
             tags: [e.category]
           }));
           setEvents(mapped);
+          persistApproved(mapped);
         }
       } catch (err) {
         console.error("Failed to load admin events:", err);
@@ -98,42 +105,34 @@ export default function AdminEventsPage() {
   }
 
   async function approve(id: string | number) {
-    if (typeof id === 'string') {
-      try {
-        const res = await fetch(`/api/events/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'APPROVED' })
-        });
-        if (!res.ok) {
-          showToast('Failed to update event status');
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'approved' } : e));
+    try {
+      await fetch(`/api/events/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'APPROVED' })
+      });
+    } catch (err) { console.error(err); }
+    setEvents(prev => {
+      const updated = prev.map(e => e.id === id ? { ...e, status: 'approved' as EventStatus } : e);
+      persistApproved(updated);
+      return updated;
+    });
     showToast('Event approved ✓');
   }
 
   async function reject(id: string | number) {
-    if (typeof id === 'string') {
-      try {
-        const res = await fetch(`/api/events/${id}/status`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: 'REJECTED' })
-        });
-        if (!res.ok) {
-          showToast('Failed to update event status');
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, status: 'rejected', featured: false } : e));
+    try {
+      await fetch(`/api/events/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'REJECTED' })
+      });
+    } catch (err) { console.error(err); }
+    setEvents(prev => {
+      const updated = prev.map(e => e.id === id ? { ...e, status: 'rejected' as EventStatus, featured: false } : e);
+      persistApproved(updated);
+      return updated;
+    });
     showToast('Event rejected.');
   }
 
@@ -141,24 +140,18 @@ export default function AdminEventsPage() {
     const ev = events.find(e => e.id === id);
     if (!ev) return;
     const nowFeatured = !ev.featured;
-
-    if (typeof id === 'string') {
-      try {
-        const res = await fetch(`/api/events/${id}/feature`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ featured: nowFeatured })
-        });
-        if (!res.ok) {
-          showToast('Failed to update feature status');
-          return;
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    setEvents(prev => prev.map(e => e.id === id ? { ...e, featured: nowFeatured } : e));
+    try {
+      await fetch(`/api/events/${id}/feature`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: nowFeatured })
+      });
+    } catch (err) { console.error(err); }
+    setEvents(prev => {
+      const updated = prev.map(e => e.id === id ? { ...e, featured: nowFeatured } : e);
+      persistApproved(updated);
+      return updated;
+    });
     showToast(nowFeatured ? 'Event featured ✓' : 'Event unfeatured.');
   }
 

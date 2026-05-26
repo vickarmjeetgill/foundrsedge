@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
@@ -61,9 +62,30 @@ function validateForm(form: FormData): FormErrors {
 }
 
 export default function EventSubmitPage() {
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
+
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Pre-fill form when editing an existing submission
+  useEffect(() => {
+    if (!editId) return;
+    const raw = localStorage.getItem('fe_my_submissions');
+    if (!raw) return;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const submissions: any[] = JSON.parse(raw);
+      const match = submissions.find(s => s.id === editId);
+      if (match) {
+        const { id, submittedAt, updatedAt, status, ...formData } = match;
+        setForm(formData as FormData);
+        setIsEditing(true);
+      }
+    } catch {}
+  }, [editId]);
 
   function handleChange(field: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -80,6 +102,25 @@ export default function EventSubmitPage() {
 
   const [errorMsg, setErrorMsg] = useState('');
 
+  function saveToLocalStorage(formData: FormData) {
+    const raw = localStorage.getItem('fe_my_submissions') || '[]';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const submissions: any[] = JSON.parse(raw);
+    const now = new Date().toISOString();
+
+    if (isEditing && editId) {
+      const updated = submissions.map(s =>
+        s.id === editId
+          ? { ...formData, id: editId, submittedAt: s.submittedAt, updatedAt: now, status: 'pending' }
+          : s
+      );
+      localStorage.setItem('fe_my_submissions', JSON.stringify(updated));
+    } else {
+      const newSub = { ...formData, id: `sub_${Date.now()}`, submittedAt: now, status: 'pending' };
+      localStorage.setItem('fe_my_submissions', JSON.stringify([...submissions, newSub]));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrorMsg('');
@@ -91,13 +132,17 @@ export default function EventSubmitPage() {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    // Editing an existing submission — only update localStorage, no duplicate API call
+    if (isEditing) {
+      saveToLocalStorage(form);
+      setSubmitted(true);
+      return;
+    }
 
     try {
       const res = await fetch('/api/events', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: form.title,
           description: form.description,
@@ -116,6 +161,7 @@ export default function EventSubmitPage() {
         return;
       }
 
+      saveToLocalStorage(form);
       setSubmitted(true);
     } catch (err: any) {
       console.error(err);
@@ -133,9 +179,9 @@ export default function EventSubmitPage() {
       <PageLayout>
         <div className="page-hero">
           <div className="container">
-            <div className="section-label">Submit an Event</div>
+            <div className="section-label">{isEditing ? 'Edit Submission' : 'Submit an Event'}</div>
             <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(36px, 5vw, 64px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: 16 }}>
-              SUBMIT AN<br /><span style={{ color: '#e7b605' }}>EVENT</span>
+              {isEditing ? 'SUBMISSION\n' : 'SUBMIT AN\n'}<span style={{ color: '#e7b605' }}>{isEditing ? 'UPDATED' : 'EVENT'}</span>
             </h1>
           </div>
         </div>
@@ -144,17 +190,25 @@ export default function EventSubmitPage() {
             <div style={{ background: '#fff', border: '1px solid #e2e0d8', borderTop: '4px solid #e7b605', padding: '60px 48px', textAlign: 'center' }}>
               <CheckCircle size={56} style={{ color: '#e7b605', marginBottom: 24 }} />
               <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '28px', color: '#2a2820', marginBottom: 16 }}>
-                Your event has been submitted!
+                {isEditing ? 'Your submission has been updated!' : 'Your event has been submitted!'}
               </h2>
               <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', lineHeight: 1.8, fontSize: '16px', marginBottom: 32 }}>
-                Thank you for submitting <strong>{form.title}</strong>. Our team reviews all submitted events within 2–3 business days. If approved, your event will be promoted to all Founders Edge members and featured on the events page.
+                {isEditing
+                  ? <>Your updates to <strong>{form.title}</strong> have been saved and sent back for review. Our team will assess the changes within 2–3 business days.</>
+                  : <>Thank you for submitting <strong>{form.title}</strong>. Our team reviews all submitted events within 2–3 business days. If approved, your event will be promoted to all Founders Edge members and featured on the events page.</>
+                }
               </p>
               <p style={{ fontFamily: 'Noto Serif, serif', color: '#9a9585', fontSize: '14px', marginBottom: 40 }}>
                 You'll receive a confirmation email at <strong>{form.contactEmail}</strong> once a decision has been made.
               </p>
-              <Link href="/events" className="btn-primary" style={{ justifyContent: 'center' }}>
-                <ArrowLeft size={16} /> Back to Events
-              </Link>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <Link href="/dashboard" className="btn-primary" style={{ justifyContent: 'center' }}>
+                  Back to Dashboard
+                </Link>
+                <Link href="/events" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', border: '1px solid #e2e0d8', color: '#5a5650', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '14px', textDecoration: 'none' }}>
+                  <ArrowLeft size={16} /> All Events
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -168,17 +222,20 @@ export default function EventSubmitPage() {
       <div className="page-hero">
         <div className="container">
           <Link
-            href="/events"
+            href={isEditing ? '/dashboard' : '/events'}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#9a9585', fontFamily: 'DM Sans, sans-serif', fontSize: '13px', fontWeight: 600, textDecoration: 'none', marginBottom: 24, letterSpacing: '0.05em', textTransform: 'uppercase' }}
           >
-            <ArrowLeft size={14} /> All Events
+            <ArrowLeft size={14} /> {isEditing ? 'Back to Dashboard' : 'All Events'}
           </Link>
-          <div className="section-label">Submit an Event</div>
+          <div className="section-label">{isEditing ? 'Edit Submission' : 'Submit an Event'}</div>
           <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(36px, 5vw, 64px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.05, marginBottom: 16 }}>
-            SUBMIT AN<br /><span style={{ color: '#e7b605' }}>EVENT</span>
+            {isEditing ? <>EDIT YOUR<br /><span style={{ color: '#e7b605' }}>SUBMISSION</span></> : <>SUBMIT AN<br /><span style={{ color: '#e7b605' }}>EVENT</span></>}
           </h1>
           <p style={{ fontFamily: 'Noto Serif, serif', color: '#999', fontSize: '17px', maxWidth: 480, lineHeight: 1.7 }}>
-            Share your event with Calgary's entrepreneurial community. We review every submission personally.
+            {isEditing
+              ? 'Update your submission below. Re-submitting will send it back to our team for review.'
+              : "Share your event with Calgary's entrepreneurial community. We review every submission personally."
+            }
           </p>
         </div>
       </div>
@@ -399,7 +456,7 @@ export default function EventSubmitPage() {
 
             {/* Submit */}
             <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', fontSize: '15px', padding: '18px' }}>
-              Submit for Review
+              {isEditing ? 'Save & Resubmit for Review' : 'Submit for Review'}
             </button>
           </form>
         </div>

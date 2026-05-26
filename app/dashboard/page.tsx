@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star, ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User } from 'lucide-react';
+import { Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star, ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User, Plus, Pencil, Trash2 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import { logout } from '@/app/actions/auth';
@@ -10,7 +10,6 @@ import { getProfile } from '@/app/actions/profile';
 const defaultMember = {
   name: 'Loading User',
   business: 'Loading Business',
-  stage: 'Member',
   industry: 'Member',
   joined: 'May 2026',
   profileCompletion: 85,
@@ -41,11 +40,25 @@ const navItems = [
   { icon: Star, label: 'Supper Club', href: '/supper-club' },
 ];
 
-export default function DashboardPage() {
+type Submission = {
+  id: string;
+  title: string;
+  category: string;
+  submittedAt: string;
+  updatedAt?: string;
+  status: 'pending' | 'approved' | 'rejected';
+};
 
-  const [activeNav, setActiveNav] = useState('Dashboard');
+const statusStyles: Record<Submission['status'], { bg: string; color: string; label: string }> = {
+  pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
+  approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Approved' },
+  rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b', label: 'Rejected' },
+};
+
+export default function DashboardPage() {
   const [member, setMember] = useState(defaultMember);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
 
   useEffect(() => {
     const loadMemberData = async () => {
@@ -58,7 +71,6 @@ export default function DashboardPage() {
         members (
           first_name,
           last_name,
-          stage,
           industry
         )
       `)
@@ -70,9 +82,7 @@ export default function DashboardPage() {
         console.error('Dashboard data error:', error.message);
         return;
       }
-      if (!data) {
-        return;
-      }
+      if (!data) return;
 
       const memberData = Array.isArray(data.members)
         ? data.members[0]
@@ -81,7 +91,6 @@ export default function DashboardPage() {
       setMember({
         name: `${memberData?.first_name ?? ''} ${memberData?.last_name ?? ''}`.trim() || 'Member',
         business: data.business_name ?? 'Business',
-        stage: memberData?.stage ?? 'N/A',
         industry: memberData?.industry ?? 'N/A',
         joined: data.created_at
           ? new Date(data.created_at).toLocaleDateString('en-US', {
@@ -102,15 +111,28 @@ export default function DashboardPage() {
           ...prev,
           name: (res.user as any).name || prev.name,
           business: 'Founders Edge Member',
-          stage: (res.user as any).role || prev.stage,
           industry: 'Member',
         }));
       }
     };
 
+    const loadSubmissions = () => {
+      const raw = localStorage.getItem('fe_my_submissions');
+      if (raw) {
+        try { setMySubmissions(JSON.parse(raw)); } catch {}
+      }
+    };
+
     // loadMemberData();
     loadProfile();
+    loadSubmissions();
   }, []);
+
+  function deleteSubmission(id: string) {
+    const updated = mySubmissions.filter(s => s.id !== id);
+    setMySubmissions(updated);
+    localStorage.setItem('fe_my_submissions', JSON.stringify(updated));
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#f9f9f7' }}>
@@ -142,7 +164,6 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <span style={{ padding: '3px 10px', background: '#9b7011', color: '#fff', fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{member.stage}</span>
             <span style={{ padding: '3px 10px', background: '#1a1a1a', color: '#888', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em' }}>{member.industry}</span>
           </div>
           {/* Profile completion */}
@@ -211,7 +232,7 @@ export default function DashboardPage() {
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e0d8', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
           <div>
             <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px' }}>Good morning, {member.name.split(' ')[0]} 👋</h1>
-            <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined} · <span style={{ color: '#e7b605' }}>{member.stage} Stage</span></div>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button style={{ width: 40, height: 40, background: '#f9f9f7', border: '1px solid #e2e0d8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
@@ -333,6 +354,81 @@ export default function DashboardPage() {
                 Reserve My Spot <Zap size={16} />
               </button>
             </div>
+          </div>
+
+          {/* My Event Submissions */}
+          <div style={{ marginTop: 2, background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>My Event Submissions</h2>
+              <Link href="/events/submit" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#e7b605', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>
+                <Plus size={14} /> Submit New Event
+              </Link>
+            </div>
+
+            {mySubmissions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 0', borderTop: '1px solid #f0efe9' }}>
+                <Calendar size={32} style={{ color: '#e2e0d8', marginBottom: 12 }} />
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '15px', color: '#9a9585', marginBottom: 8 }}>No submissions yet</div>
+                <div style={{ fontSize: '13px', color: '#b8b4ae', fontFamily: 'Noto Serif, serif', marginBottom: 20 }}>
+                  Have an event for the Founders Edge community? Submit it for review.
+                </div>
+                <Link href="/events/submit" className="btn-primary" style={{ justifyContent: 'center', display: 'inline-flex' }}>
+                  Submit an Event
+                </Link>
+              </div>
+            ) : (
+              <div>
+                {mySubmissions.map((sub, i) => {
+                  const s = statusStyles[sub.status];
+                  const canEdit = sub.status !== 'approved';
+                  return (
+                    <div key={sub.id} style={{ padding: '16px 0', borderTop: '1px solid #f0efe9', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: '15px', color: '#2a2820', marginBottom: 4 }}>{sub.title}</div>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                          <span className="tag" style={{ fontSize: '10px', padding: '2px 8px' }}>{sub.category}</span>
+                          <span style={{ fontSize: '12px', color: '#9a9585' }}>
+                            Submitted {new Date(sub.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                          {sub.updatedAt && (
+                            <span style={{ fontSize: '12px', color: '#9a9585' }}>
+                              · Updated {new Date(sub.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                        <span style={{ background: s.bg, color: s.color, padding: '4px 12px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', borderRadius: 2 }}>
+                          {s.label}
+                        </span>
+                        {canEdit && (
+                          <Link
+                            href={`/events/submit?edit=${sub.id}`}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#555', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', textDecoration: 'none', letterSpacing: '0.04em', transition: 'all 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#e7b605'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#555'; }}
+                          >
+                            <Pencil size={12} /> Edit
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => {
+                            if (confirm('Delete this submission? This cannot be undone.')) {
+                              deleteSubmission(sub.id);
+                            }
+                          }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', letterSpacing: '0.04em', cursor: 'pointer', transition: 'all 0.2s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}
+                        >
+                          <Trash2 size={12} /> Delete
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </main>

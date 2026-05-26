@@ -17,7 +17,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 ];
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type EventItem = { id: string | number; title: string; date: string; time: string; location: string; category: string; price: string; host: string; desc: string; featured: boolean };
+type EventItem = { id: string | number; title: string; date: string; time: string; location: string; category: string; price: string; host: string; desc: string; featured: boolean; fromSubmission?: boolean };
 type DirectoryItem = { id: string | number; name: string; industry: string; location: string; desc: string; website: string; tags: string; featured: boolean; boosted: boolean };
 type ResourceItem = { id: string | number; title: string; category: string; url: string; tags: string; desc: string; featured: boolean };
 type AwardItem = { id: string | number; name: string; category: string; desc: string; nominationsOpen: boolean; awardDate: string; sponsor: string };
@@ -112,6 +112,7 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             host: e.host || '',
             desc: e.description || '',
             featured: e.featured || false,
+            fromSubmission: true,
           }));
           setItems(mapped);
         }
@@ -142,7 +143,7 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
           })
         });
         if (res.ok) {
-          setItems(items.map(i => i.id === editId ? { ...form, id: editId } : i));
+          setItems(items.map(i => i.id === editId ? { ...form, id: editId, fromSubmission: i.fromSubmission } : i));
           onSuccess('Event updated successfully in database.');
           setEditId(null);
           setForm(blankEvent);
@@ -179,7 +180,8 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             price: created.price || '',
             host: created.host || '',
             desc: created.description || '',
-            featured: created.featured || false
+            featured: created.featured || false,
+            fromSubmission: false,
           }]);
           onSuccess('Event added successfully to database.');
           setForm(blankEvent);
@@ -234,7 +236,7 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
         <div style={{ gridColumn: '1 / -1' }}><Field label="Description"><textarea style={textareaStyle} value={form.desc} onChange={e => set('desc', e.target.value)} placeholder="Describe the event..." /></Field></div>
         <SubmitRow editing={editId !== null} onCancel={() => { setEditId(null); setForm(blankEvent); }} addLabel="Add Event" />
       </form>
-      <ItemTable items={items} columns={['Title', 'Date', 'Category', 'Featured']} getRow={i => [i.title, i.date || '—', i.category, i.featured ? 'Yes' : 'No']} onEdit={handleEdit} onDelete={handleDelete} />
+      <ItemTable items={items} columns={['Title', 'Date', 'Category', 'Source', 'Featured']} getRow={i => [i.title, i.date || '—', i.category, i.fromSubmission ? '📋 Submission' : '✏️ Manual', i.featured ? 'Yes' : 'No']} onEdit={handleEdit} onDelete={handleDelete} />
     </>
   );
 }
