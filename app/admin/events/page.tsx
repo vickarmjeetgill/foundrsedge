@@ -27,16 +27,6 @@ type AdminEvent = {
   tags: string[];
 };
 
-const initialEvents: AdminEvent[] = [
-  { id: 1, title: 'YYC Founders Mixer', category: 'Networking', host: 'Founders Edge', hostEmail: 'hello@foundrsedge.com', date: 'Jun 18, 2026', time: '6:00 PM', duration: '3 hrs', capacity: 80, price: 'Free', submittedDate: 'May 20, 2026', status: 'approved', featured: true, isOnline: false, location: 'The Commons, 908 17 Ave SW, Calgary', description: 'Join us for an evening of high-quality networking with Calgary\'s top founders and entrepreneurs. Drinks, conversation, and connections that matter. Expect curated introductions, a short founder spotlight, and an open networking session.', tags: ['Networking', 'Calgary', 'Founders'] },
-  { id: 2, title: 'Scale-Up Workshop: Hiring Your First 10', category: 'Workshop', host: 'Sarah Kim', hostEmail: 'sarah@kimventures.ca', date: 'Jun 25, 2026', time: '9:00 AM', duration: '4 hrs', capacity: 30, price: '$149', submittedDate: 'May 21, 2026', status: 'approved', featured: true, isOnline: false, location: 'Platform Calgary, 422 11 Ave SW', description: 'A hands-on workshop covering everything you need to know about making your first 10 hires. Topics include writing job descriptions that attract A-players, structuring interviews, onboarding best practices, and building culture from day one.', tags: ['Hiring', 'Workshop', 'Scale-Up'] },
-  { id: 3, title: 'Funding 101: Grants & Tax Credits for AB Businesses', category: 'Webinar', host: 'Amanda Chen', hostEmail: 'amanda@abizgrants.ca', date: 'Jul 9, 2026', time: '12:00 PM', duration: '90 mins', capacity: 200, price: 'Free', submittedDate: 'May 22, 2026', status: 'approved', featured: false, isOnline: true, location: 'Online', description: 'Learn about the most valuable grants, SR&ED tax credits, and government programs available to Alberta businesses. Practical breakdown of eligibility, application timelines, and how to maximize your funding stack.', tags: ['Funding', 'Grants', 'SR&ED', 'Alberta'] },
-  { id: 4, title: 'Supper Club — June Edition', category: 'Supper Club', host: 'Founders Edge', hostEmail: 'hello@foundrsedge.com', date: 'Jun 27, 2026', time: '7:00 PM', duration: '3 hrs', capacity: 16, price: 'Members Only', submittedDate: 'May 19, 2026', status: 'approved', featured: true, isOnline: false, location: 'River Café, 25 Prince\'s Island Park', description: 'Our intimate monthly dinner for Founders Edge members. 16 seats, curated conversation, fine dining. This month\'s theme: navigating partnerships and co-founder relationships. Come ready to share openly and connect deeply.', tags: ['Supper Club', 'Members Only', 'Networking'] },
-  { id: 5, title: 'B2B Sales Masterclass', category: 'Workshop', host: 'Mike Okafor', hostEmail: 'mike@salesedge.io', date: 'Jul 16, 2026', time: '10:00 AM', duration: '2 hrs', capacity: 50, price: '$79', submittedDate: 'May 23, 2026', status: 'approved', featured: false, isOnline: true, location: 'Online', description: 'A no-fluff masterclass on closing B2B deals faster. Covers outbound prospecting, discovery calls, handling objections, and building a repeatable pipeline. Bring your biggest sales challenge — we\'ll workshop it live.', tags: ['Sales', 'B2B', 'Revenue'] },
-  { id: 6, title: 'AI Tools for Calgary Entrepreneurs', category: 'Workshop', host: 'Priya Mehta', hostEmail: 'priya@aiforward.ca', date: 'Jul 22, 2026', time: '2:00 PM', duration: '2 hrs', capacity: 40, price: 'Free', submittedDate: 'May 24, 2026', status: 'pending', featured: false, isOnline: true, location: 'Online', description: 'A practical walkthrough of the AI tools that are actually saving founders time in 2026. Covers ChatGPT, Notion AI, Cursor, and more. Live demos included. No technical background required — just curiosity and a laptop.', tags: ['AI', 'Tools', 'Productivity', 'Tech'] },
-  { id: 7, title: 'PropTech Networking Night', category: 'Networking', host: 'Calgary Realty Labs', hostEmail: 'events@calgaryrealitylabs.com', date: 'Jul 30, 2026', time: '5:30 PM', duration: '2.5 hrs', capacity: 60, price: '$25', submittedDate: 'May 25, 2026', status: 'pending', featured: false, isOnline: false, location: 'Bow Tower, 500 Centre St S, Calgary', description: 'Calgary\'s real estate and technology communities collide at this quarterly networking event. Meet developers, investors, proptech founders, and real estate professionals shaping the future of property in YYC. Open bar for the first hour.', tags: ['PropTech', 'Real Estate', 'Networking', 'Calgary'] },
-];
-
 type Tab = 'All' | 'Pending' | 'Approved' | 'Rejected';
 
 const tabs: Tab[] = ['All', 'Pending', 'Approved', 'Rejected'];
@@ -91,7 +81,7 @@ export default function AdminEventsPage() {
             description: e.description,
             tags: [e.category]
           }));
-          setEvents([...initialEvents, ...mapped]);
+          setEvents(mapped);
         }
       } catch (err) {
         console.error("Failed to load admin events:", err);
@@ -154,8 +144,8 @@ export default function AdminEventsPage() {
 
     if (typeof id === 'string') {
       try {
-        const res = await fetch(`/api/events/${id}`, {
-          method: 'PUT',
+        const res = await fetch(`/api/events/${id}/feature`, {
+          method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ featured: nowFeatured })
         });

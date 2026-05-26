@@ -24,14 +24,6 @@ type Event = {
   tags: string[];
 };
 
-const events: Event[] = [
-  { id: 1, title: 'YYC Founders Mixer', desc: 'An intimate networking evening for Calgary entrepreneurs. Connect with founders across industries, share what you\'re working on, and build real relationships.', category: 'Networking', date: 'Jun 18, 2026', time: '6:00 PM', duration: '2.5 hrs', location: 'The Commons, 908 17 Ave SW, Calgary', isOnline: false, price: 'Free', host: 'Founders Edge', hostBio: 'Calgary\'s curated entrepreneur membership platform.', capacity: 60, attendees: 42, featured: true, status: 'approved', tags: ['Networking', 'In-Person', 'All Industries'] },
-  { id: 2, title: 'Scale-Up Workshop: Hiring Your First 10', desc: 'A hands-on workshop covering the playbook for hiring in the 0–10 employee stage. From job descriptions to culture fit — walk away with a framework you can use immediately.', category: 'Workshop', date: 'Jun 25, 2026', time: '9:00 AM', duration: '3 hrs', location: 'Platform Calgary, 422 11 Ave SW', isOnline: false, price: '$49', host: 'Sarah Kim', hostBio: 'Founder of Pinnacle People Co. Has helped 40+ Calgary companies build their first teams.', capacity: 30, attendees: 28, featured: true, status: 'approved', tags: ['HR', 'Hiring', 'Workshop'] },
-  { id: 3, title: 'Funding 101: Grants & Tax Credits for AB Businesses', desc: 'Live webinar walking through the top grants, SR&ED credits, and provincial programs available to Alberta businesses right now. Q&A included.', category: 'Webinar', date: 'Jul 9, 2026', time: '12:00 PM', duration: '1 hr', location: 'Online', isOnline: true, price: 'Free', host: 'Amanda Chen', hostBio: 'CPA and founder of Foothills Financial Advisory. Specializes in government funding programs.', capacity: 200, attendees: 87, featured: false, status: 'approved', tags: ['Finance', 'Grants', 'Online'] },
-  { id: 4, title: 'Supper Club — June Edition', desc: 'An intimate dinner for 12 carefully selected Calgary entrepreneurs. Curated theme, facilitated conversation, exceptional food. Invite-based with member priority.', category: 'Supper Club', date: 'Jun 27, 2026', time: '7:00 PM', duration: '3 hrs', location: 'River Café, 25 Prince\'s Island Park', isOnline: false, price: 'Members', host: 'Founders Edge', hostBio: 'Calgary\'s curated entrepreneur membership platform.', capacity: 12, attendees: 10, featured: true, status: 'approved', tags: ['Supper Club', 'Exclusive', 'Members Only'] },
-  { id: 5, title: 'B2B Sales Masterclass', desc: 'Learn the frameworks used by top B2B sales teams in Calgary. Cold outreach, discovery calls, proposal structure, and closing — all covered with real examples.', category: 'Workshop', date: 'Jul 16, 2026', time: '2:00 PM', duration: '2 hrs', location: 'Online', isOnline: true, price: '$29', host: 'Mike Okafor', hostBio: 'VP Sales at Velocity Tech. Closed $12M in B2B deals in the last 3 years.', capacity: 100, attendees: 34, featured: false, status: 'approved', tags: ['Sales', 'B2B', 'Online'] },
-];
-
 const categoryColors: Record<string, string> = {
   Networking: '#e7b605',
   Workshop: '#9b7011',
@@ -60,6 +52,11 @@ function getMonthRange() {
 }
 
 function parseEventDate(dateStr: string): Date {
+  // If the date already contains hyphens or has the year included, parse it directly
+  if (dateStr.includes('-') || dateStr.includes('20')) {
+    return new Date(dateStr);
+  }
+  // Fallback for short mock dates (e.g. "Jun 18")
   return new Date(dateStr + ' 2026');
 }
 
@@ -106,7 +103,7 @@ export default function EventsPage() {
     tags: [e.category],
   }));
 
-  const allEvents = [...events, ...mappedDbEvents];
+  const allEvents = mappedDbEvents;
 
   const filtered = allEvents
     .filter(e => e.status === 'approved')

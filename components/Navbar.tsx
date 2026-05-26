@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, ChevronDown } from 'lucide-react';
 import Logo from './Logo';
+import { getProfile } from '@/app/actions/profile';
 
 const navLinks = [
   { label: 'Membership', href: '/membership' },
@@ -18,6 +19,7 @@ const navLinks = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -25,6 +27,22 @@ export default function Navbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await getProfile();
+        if (res.success && res.user) {
+          setUser(res.user);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    }
+    checkAuth();
+  }, [pathname]);
 
   const isHome = pathname === '/';
 
@@ -56,17 +74,30 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="hidden-mobile">
-          <Link href="/login" style={{
-            color: '#ccc', fontFamily: 'var(--font-sans)', fontWeight: 600,
-            fontSize: '13px', textDecoration: 'none', letterSpacing: '0.05em',
-            textTransform: 'uppercase', padding: '8px 0', transition: 'color 0.2s',
-          }}>
-            Login
-          </Link>
-          <Link href="/apply" className="btn-primary" style={{ padding: '10px 24px', fontSize: '12px' }}>
-            Apply Now
-          </Link>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }} className="hidden-mobile">
+          {user ? (
+            <>
+              <span style={{ color: 'var(--gold)', fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Hi, {user.name?.split(' ')[0] || 'Member'}
+              </span>
+              <Link href={user.role === 'ADMIN' ? '/admin/events' : '/dashboard'} className="btn-primary" style={{ padding: '10px 24px', fontSize: '12px' }}>
+                Dashboard
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/login" style={{
+                color: '#ccc', fontFamily: 'var(--font-sans)', fontWeight: 600,
+                fontSize: '13px', textDecoration: 'none', letterSpacing: '0.05em',
+                textTransform: 'uppercase', padding: '8px 0', transition: 'color 0.2s',
+              }}>
+                Login
+              </Link>
+              <Link href="/apply" className="btn-primary" style={{ padding: '10px 24px', fontSize: '12px' }}>
+                Apply Now
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -95,8 +126,21 @@ export default function Navbar() {
             </Link>
           ))}
           <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <Link href="/login" style={{ color: '#ccc', textAlign: 'center', padding: '12px', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '14px', textDecoration: 'none', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Login</Link>
-            <Link href="/apply" className="btn-primary" style={{ textAlign: 'center', justifyContent: 'center' }}>Apply Now</Link>
+            {user ? (
+              <>
+                <div style={{ color: 'var(--gold)', textAlign: 'center', fontFamily: 'var(--font-sans)', fontWeight: 700, fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Hi, {user.name?.split(' ')[0] || 'Member'}
+                </div>
+                <Link href={user.role === 'ADMIN' ? '/admin/events' : '/dashboard'} className="btn-primary" onClick={() => setOpen(false)} style={{ textAlign: 'center', justifyContent: 'center' }}>
+                  Dashboard
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" onClick={() => setOpen(false)} style={{ color: '#ccc', textAlign: 'center', padding: '12px', fontFamily: 'var(--font-sans)', fontWeight: 600, fontSize: '14px', textDecoration: 'none', letterSpacing: '0.05em', textTransform: 'uppercase' }}>Login</Link>
+                <Link href="/apply" className="btn-primary" onClick={() => setOpen(false)} style={{ textAlign: 'center', justifyContent: 'center' }}>Apply Now</Link>
+              </>
+            )}
           </div>
         </div>
       )}

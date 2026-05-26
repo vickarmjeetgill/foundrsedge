@@ -17,12 +17,12 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 ];
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type EventItem = { id: number; title: string; date: string; time: string; location: string; category: string; price: string; host: string; desc: string; featured: boolean };
-type DirectoryItem = { id: number; name: string; industry: string; location: string; desc: string; website: string; tags: string; featured: boolean; boosted: boolean };
-type ResourceItem = { id: number; title: string; category: string; url: string; tags: string; desc: string; featured: boolean };
-type AwardItem = { id: number; name: string; category: string; desc: string; nominationsOpen: boolean; awardDate: string; sponsor: string };
-type WebinarItem = { id: number; title: string; speaker: string; speakerRole: string; date: string; time: string; duration: string; category: string; desc: string };
-type SupperClubItem = { id: number; title: string; date: string; time: string; location: string; capacity: string; desc: string; inviteOnly: boolean };
+type EventItem = { id: string | number; title: string; date: string; time: string; location: string; category: string; price: string; host: string; desc: string; featured: boolean };
+type DirectoryItem = { id: string | number; name: string; industry: string; location: string; desc: string; website: string; tags: string; featured: boolean; boosted: boolean };
+type ResourceItem = { id: string | number; title: string; category: string; url: string; tags: string; desc: string; featured: boolean };
+type AwardItem = { id: string | number; name: string; category: string; desc: string; nominationsOpen: boolean; awardDate: string; sponsor: string };
+type WebinarItem = { id: string | number; title: string; speaker: string; speakerRole: string; date: string; time: string; duration: string; category: string; desc: string };
+type SupperClubItem = { id: string | number; title: string; date: string; time: string; location: string; capacity: string; desc: string; inviteOnly: boolean };
 
 // ─── SHARED UI ────────────────────────────────────────────────────────────────
 function SuccessBanner({ message, onClose }: { message: string; onClose: () => void }) {
@@ -92,22 +92,106 @@ const blankEvent = { title: '', date: '', time: '', location: '', category: 'Net
 function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<EventItem[]>([]);
   const [form, setForm] = useState(blankEvent);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [nextId, setNextId] = useState(1);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (editId !== null) {
-      setItems(items.map(i => i.id === editId ? { ...form, id: editId } : i));
-      onSuccess('Event updated successfully.');
-      setEditId(null);
-    } else {
-      setItems([...items, { ...form, id: nextId }]);
-      setNextId(n => n + 1);
-      onSuccess('Event added successfully.');
+  useEffect(() => {
+    async function loadEvents() {
+      try {
+        const res = await fetch('/api/events');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: EventItem[] = dbData.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            date: e.date,
+            time: e.time,
+            location: e.location,
+            category: e.category,
+            price: e.price || '',
+            host: e.host || '',
+            desc: e.description || '',
+            featured: e.featured || false,
+          }));
+          setItems(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load events:", err);
+      }
     }
-    setForm(blankEvent);
+    loadEvents();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+      if (editId !== null) {
+        const res = await fetch(`/api/events/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: form.title,
+            description: form.desc,
+            date: form.date,
+            time: form.time,
+            location: form.location,
+            category: form.category,
+            price: form.price,
+            host: form.host,
+            featured: form.featured
+          })
+        });
+        if (res.ok) {
+          setItems(items.map(i => i.id === editId ? { ...form, id: editId } : i));
+          onSuccess('Event updated successfully in database.');
+          setEditId(null);
+          setForm(blankEvent);
+        } else {
+          const data = await res.json();
+          alert(`Error updating event: ${data.error || 'Unknown error'}`);
+        }
+      } else {
+        const res = await fetch('/api/events', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: form.title,
+            description: form.desc,
+            date: form.date,
+            time: form.time,
+            location: form.location,
+            category: form.category,
+            price: form.price,
+            host: form.host,
+            featured: form.featured
+          })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const created = data.event;
+          setItems([...items, {
+            id: created.id,
+            title: created.title,
+            date: created.date,
+            time: created.time,
+            location: created.location,
+            category: created.category,
+            price: created.price || '',
+            host: created.host || '',
+            desc: created.description || '',
+            featured: created.featured || false
+          }]);
+          onSuccess('Event added successfully to database.');
+          setForm(blankEvent);
+        } else {
+          const data = await res.json();
+          alert(`Error adding event: ${data.error || 'Unknown error'}`);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network or server error occurred.');
+    }
   }
 
   function handleEdit(item: EventItem) {
@@ -116,8 +200,24 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: number) {
-    if (confirm('Delete this event?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Event deleted.'); }
+  async function handleDelete(id: string | number) {
+    if (confirm('Are you sure you want to permanently delete this event from the database?')) {
+      try {
+        const res = await fetch(`/api/events/${id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          setItems(items.filter(i => i.id !== id));
+          onSuccess('Event deleted from database.');
+        } else {
+          const data = await res.json();
+          alert(`Error deleting event: ${data.error || 'Unknown error'}`);
+        }
+      } catch (err) {
+        console.error(err);
+        alert('Network error occurred while trying to delete event.');
+      }
+    }
   }
 
   return (
@@ -145,7 +245,7 @@ const blankDir = { name: '', industry: 'Technology', location: 'Calgary', desc: 
 function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<DirectoryItem[]>([]);
   const [form, setForm] = useState(blankDir);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
@@ -169,7 +269,7 @@ function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: number) {
+  function handleDelete(id: string | number) {
     if (confirm('Delete this listing?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Listing deleted.'); }
   }
 
@@ -201,7 +301,7 @@ const blankRes = { title: '', category: 'Funding', url: '', tags: '', desc: '', 
 function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<ResourceItem[]>([]);
   const [form, setForm] = useState(blankRes);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
@@ -225,7 +325,7 @@ function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: number) {
+  function handleDelete(id: string | number) {
     if (confirm('Delete this resource?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Resource deleted.'); }
   }
 
@@ -251,7 +351,7 @@ const blankAward = { name: '', category: '', desc: '', nominationsOpen: false, a
 function AwardsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<AwardItem[]>([]);
   const [form, setForm] = useState(blankAward);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
@@ -275,7 +375,7 @@ function AwardsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: number) {
+  function handleDelete(id: string | number) {
     if (confirm('Delete this award?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Award deleted.'); }
   }
 
@@ -301,7 +401,7 @@ const blankWebinar = { title: '', speaker: '', speakerRole: '', date: '', time: 
 function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<WebinarItem[]>([]);
   const [form, setForm] = useState(blankWebinar);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
@@ -325,7 +425,7 @@ function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: number) {
+  function handleDelete(id: string | number) {
     if (confirm('Delete this webinar?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Webinar deleted.'); }
   }
 
@@ -353,7 +453,7 @@ const blankSC = { title: '', date: '', time: '', location: '', capacity: '', des
 function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<SupperClubItem[]>([]);
   const [form, setForm] = useState(blankSC);
-  const [editId, setEditId] = useState<number | null>(null);
+  const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
@@ -377,7 +477,7 @@ function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: number) {
+  function handleDelete(id: string | number) {
     if (confirm('Delete this supper club event?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Event deleted.'); }
   }
 
@@ -399,8 +499,8 @@ function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) 
 }
 
 // ─── ITEM TABLE ───────────────────────────────────────────────────────────────
-function ItemTable<T extends { id: number }>({ items, columns, getRow, onEdit, onDelete }: {
-  items: T[]; columns: string[]; getRow: (item: T) => string[]; onEdit: (item: T) => void; onDelete: (id: number) => void;
+function ItemTable<T extends { id: string | number }>({ items, columns, getRow, onEdit, onDelete }: {
+  items: T[]; columns: string[]; getRow: (item: T) => string[]; onEdit: (item: T) => void; onDelete: (id: string | number) => void;
 }) {
   const [collapsed, setCollapsed] = useState(false);
   if (items.length === 0) return null;

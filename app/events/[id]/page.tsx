@@ -1,8 +1,8 @@
 'use client';
-import { use } from 'react';
 import Link from 'next/link';
 import { Calendar, MapPin, Clock, Users, Share2, ArrowLeft, Wifi, Star, ChevronRight } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
+import { use, useState, useEffect } from 'react';
 
 type Event = {
   id: number;
@@ -24,14 +24,6 @@ type Event = {
   tags: string[];
 };
 
-const events: Event[] = [
-  { id: 1, title: 'YYC Founders Mixer', desc: 'An intimate networking evening for Calgary entrepreneurs. Connect with founders across industries, share what you\'re working on, and build real relationships.\n\nThis is your chance to meet the people building Calgary\'s next wave of companies. Whether you\'re pre-revenue or post-Series A, all founders are welcome. The format is unstructured — come with an open mind and leave with real connections.\n\nLight refreshments provided. Dress is smart-casual.', category: 'Networking', date: 'Jun 18, 2026', time: '6:00 PM', duration: '2.5 hrs', location: 'The Commons, 908 17 Ave SW, Calgary', isOnline: false, price: 'Free', host: 'Founders Edge', hostBio: 'Calgary\'s curated entrepreneur membership platform.', capacity: 60, attendees: 42, featured: true, status: 'approved', tags: ['Networking', 'In-Person', 'All Industries'] },
-  { id: 2, title: 'Scale-Up Workshop: Hiring Your First 10', desc: 'A hands-on workshop covering the playbook for hiring in the 0–10 employee stage. From job descriptions to culture fit — walk away with a framework you can use immediately.\n\nMost founders make critical hiring mistakes in the early stages. This workshop fixes that. Sarah Kim will walk through her proven process used across 40+ Calgary startups — from crafting role clarity docs to structuring your interview pipeline.\n\nYou\'ll leave with a ready-to-use hiring template and a clear framework for your next hire.', category: 'Workshop', date: 'Jun 25, 2026', time: '9:00 AM', duration: '3 hrs', location: 'Platform Calgary, 422 11 Ave SW', isOnline: false, price: '$49', host: 'Sarah Kim', hostBio: 'Founder of Pinnacle People Co. Has helped 40+ Calgary companies build their first teams.', capacity: 30, attendees: 28, featured: true, status: 'approved', tags: ['HR', 'Hiring', 'Workshop'] },
-  { id: 3, title: 'Funding 101: Grants & Tax Credits for AB Businesses', desc: 'Live webinar walking through the top grants, SR&ED credits, and provincial programs available to Alberta businesses right now. Q&A included.\n\nLeave money on the table and your competitors won\'t. Amanda Chen breaks down every major funding program available to Alberta businesses — from IRAP to SR&ED to provincial grants — and shows you exactly how to qualify and apply.\n\nLive Q&A in the last 20 minutes. Recording available to registered attendees.', category: 'Webinar', date: 'Jul 9, 2026', time: '12:00 PM', duration: '1 hr', location: 'Online', isOnline: true, price: 'Free', host: 'Amanda Chen', hostBio: 'CPA and founder of Foothills Financial Advisory. Specializes in government funding programs.', capacity: 200, attendees: 87, featured: false, status: 'approved', tags: ['Finance', 'Grants', 'Online'] },
-  { id: 4, title: 'Supper Club — June Edition', desc: 'An intimate dinner for 12 carefully selected Calgary entrepreneurs. Curated theme, facilitated conversation, exceptional food. Invite-based with member priority.\n\nEach Supper Club is built around a single question — a provocative topic that shapes the whole evening. Past themes have included "What would you do differently?" and "The biggest mistake you\'re still making."\n\nSeating is strictly limited to 12. Members receive priority access. Non-members may be invited at the discretion of the organizers.', category: 'Supper Club', date: 'Jun 27, 2026', time: '7:00 PM', duration: '3 hrs', location: 'River Café, 25 Prince\'s Island Park', isOnline: false, price: 'Members', host: 'Founders Edge', hostBio: 'Calgary\'s curated entrepreneur membership platform.', capacity: 12, attendees: 10, featured: true, status: 'approved', tags: ['Supper Club', 'Exclusive', 'Members Only'] },
-  { id: 5, title: 'B2B Sales Masterclass', desc: 'Learn the frameworks used by top B2B sales teams in Calgary. Cold outreach, discovery calls, proposal structure, and closing — all covered with real examples.\n\nMike Okafor has closed $12M in B2B deals over the past 3 years, and he\'s sharing the exact playbook. From your first cold email to getting a signature on a contract — this masterclass covers the full funnel with real Calgary case studies.\n\nBrought your laptop. We\'ll workshop your actual outreach copy live.', category: 'Workshop', date: 'Jul 16, 2026', time: '2:00 PM', duration: '2 hrs', location: 'Online', isOnline: true, price: '$29', host: 'Mike Okafor', hostBio: 'VP Sales at Velocity Tech. Closed $12M in B2B deals in the last 3 years.', capacity: 100, attendees: 34, featured: false, status: 'approved', tags: ['Sales', 'B2B', 'Online'] },
-];
-
 const categoryColors: Record<string, string> = {
   Networking: '#e7b605',
   Workshop: '#9b7011',
@@ -42,8 +34,58 @@ const categoryColors: Record<string, string> = {
 
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const event = events.find(e => e.id === Number(id));
 
+  // 1. Setup states to hold your event data, other events, and loading status
+  const [event, setEvent] = useState<any | null>(null);
+  const [otherEvents, setOtherEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 2. Fetch the event details and recommendations when the page loads
+  useEffect(() => {
+    async function loadEventDetails() {
+      try {
+        setLoading(true);
+
+        // Fetch this specific event details from the database
+        const res = await fetch(`/api/events/${id}`);
+        if (res.ok) {
+          const data = await res.json();
+          setEvent(data);
+        } else {
+          setEvent(null);
+        }
+
+        // Fetch other approved events for recommendations
+        const resOthers = await fetch('/api/events');
+        if (resOthers.ok) {
+          const othersData = await resOthers.json();
+          // Filter out the current event and get up to 2 recommendations
+          setOtherEvents(othersData.filter((e: any) => e.id !== id).slice(0, 2));
+        }
+      } catch (err) {
+        console.error("Failed to load event details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadEventDetails();
+  }, [id]);
+
+  // 3. Show a loading screen while fetching
+  if (loading) {
+    return (
+      <PageLayout>
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: '#e7b605' }}>
+            Loading event details...
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  // 4. Show "Event not found" if the load completed but we didn't find any event
   if (!event) {
     return (
       <PageLayout>
@@ -58,12 +100,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
+  // Helper variables for the rest of your UI (already in your file)
   const spotsLeft = event.capacity - event.attendees;
   const fillPct = Math.round((event.attendees / event.capacity) * 100);
-  const otherEvents = events.filter(e => e.id !== event.id && e.status === 'approved').slice(0, 2);
-  const hostInitial = event.host.charAt(0).toUpperCase();
+  const hostInitial = (event.host || "M").charAt(0).toUpperCase();
 
-  const descParagraphs = event.desc.split('\n\n').filter(Boolean);
+  // NOTE: You'll also need to update the description split logic slightly,
+  // because in the database, description is saved as 'description', not 'desc':
+  const descriptionText = event.description || event.desc || "";
+  const descParagraphs = descriptionText.split('\n\n').filter(Boolean);
+
 
   return (
     <PageLayout>
@@ -111,7 +157,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
               <Clock size={16} style={{ color: '#e7b605' }} />
-              {event.duration}
+              {event.duration || "2 hrs"}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
               <MapPin size={16} style={{ color: '#e7b605' }} />
@@ -130,7 +176,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               {/* Description */}
               <div style={{ marginBottom: 48 }}>
                 <div className="section-label" style={{ marginBottom: 20 }}>About This Event</div>
-                {descParagraphs.map((para, i) => (
+                {(descParagraphs || []).map((para: string, i: number) => (
                   <p key={i} style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '16px', lineHeight: 1.8, marginBottom: 20 }}>
                     {para}
                   </p>
@@ -153,7 +199,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                       {event.host}
                     </div>
                     <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7 }}>
-                      {event.hostBio}
+                      {event.hostBio || "Member submitted event."}
                     </p>
                   </div>
                 </div>
@@ -163,7 +209,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="section-label" style={{ marginBottom: 16 }}>Tags</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {event.tags.map(tag => (
+                  {(event.tags || []).map((tag: string) => (
                     <span key={tag} className="tag">{tag}</span>
                   ))}
                 </div>

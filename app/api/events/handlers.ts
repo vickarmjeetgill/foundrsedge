@@ -1,0 +1,489 @@
+import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
+import { cookies } from "next/headers"
+import { decrypt } from "@/lib/tokens"
+
+// Helper function to check if a string is a valid UUID
+function isValidUUID(uuid: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  return uuidRegex.test(uuid)
+}
+
+// ====================================================
+// 1. GET /api/events (Get events list with filters)
+// ====================================================
+export async function getEvents(request: Request) {
+  try {
+    // Grab the query filters from the URL (like search, category, etc.)
+    const { searchParams } = new URL(request.url)
+    const q = searchParams.get("q")
+    const category = searchParams.get("category")
+    const featured = searchParams.get("featured")
+    const locationType = searchParams.get("locationType")
+    const statusParam = searchParams.get("status")
+
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+
+    let isAdmin = false
+
+    // Check if the user logged in is an Admin
+    if (sessionToken) {
+      try {
+        const decoded = await decrypt(sessionToken) as { role: string }
+        if (decoded?.role === "ADMIN") {
+          isAdmin = true
+        }
+      } catch (e) {
+        console.error("Failed to decrypt session token")
+      }
+    }
+
+    const andConditions: any[] = []
+
+    // Security check: Only admins can view pending or rejected events.
+    // Regular visitors can ONLY see approved events.
+    if (isAdmin) {
+      if (statusParam) {
+        andConditions.push({ status: statusParam as any })
+      }
+    } else {
+      andConditions.push({ status: "APPROVED" })
+    }
+
+    // Search filter: Find keywords in title, description, or host name (case-insensitive)
+    if (q) {
+      andConditions.push({
+        OR: [
+          { title: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+          { host: { contains: q, mode: "insensitive" } }
+        ]
+      })
+    }
+
+    // Category filter: e.g. "Networking" or "Workshop"
+    if (category && category !== "All") {
+      andConditions.push({ category })
+    }
+
+    // Featured filter: Get only highlighted events
+    if (featured) {
+      andConditions.push({ featured: featured === "true" })
+    }
+
+    // Location type filter: Decide if it is an Online event or In-Person
+    if (locationType && locationType !== "All Locations") {
+      if (locationType === "Online") {
+        andConditions.push({
+          OR: [
+            { location: { contains: "online", mode: "insensitive" } },
+            { location: { contains: "zoom", mode: "insensitive" } }
+          ]
+        })
+      } else if (locationType === "In-Person") {
+        andConditions.push({
+          AND: [
+            { NOT: { location: { contains: "online", mode: "insensitive" } } },
+            { NOT: { location: { contains: "zoom", mode: "insensitive" } } }
+          ]
+        })
+      }
+    }
+
+    const where = andConditions.length > 0 ? { AND: andConditions } : {}
+
+    // Pull events from the database and pin featured events to the top
+    const eventsList = await prisma.events.findMany({
+      where,
+      orderBy: [
+        { featured: "desc" },
+        { created_At: "desc" }
+      ]
+    })
+    return NextResponse.json(eventsList, { status: 200 })
+  } catch (error: any) {
+    console.error("Failed to fetch events with filters:", error)
+    return NextResponse.json({ error: "Failed to fetch events" }, { status: 500 })
+  }
+}
+
+// ====================================================
+// 2. POST /api/events (Submit a new event)
+// ====================================================
+export async function createEvent(request: Request) {
+  try {
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+
+    let memberId: string | null = null
+
+    // Find the logged-in member to associate this event submission with them
+    if (sessionToken) {
+      try {
+        const decoded = await decrypt(sessionToken) as { userId: string }
+        if (decoded?.userId) {
+          const user = await prisma.user.findUnique({
+            where: { id: decoded.userId }
+          })
+          if (user?.email) {
+            const member = await prisma.members.findUnique({
+              where: { email: user.email }
+            })
+            memberId = member?.id || null
+          }
+        }
+      } catch (e) {
+        console.error("Session verification failed:", e)
+      }
+    }
+
+    const body = await request.json()
+    const { title, description, date, time, location, category, price, host } = body
+
+    // Validation: Make sure they filled out all the required fields
+    if (!title || !description || !date || !time || !location || !category) {
+      return NextResponse.json(
+        { error: "Missing required fields: title, description, date, time, location, category" },
+        { status: 400 }
+      )
+    }
+
+    // Save the new event in the database (sets status to PENDING until an admin reviews it)
+    const newEvent = await prisma.events.create({
+      data: {
+        title,
+        description,
+        date,
+        time,
+        location,
+        category,
+        price: price || "Free",
+        host: host || "Member Submission",
+        member_id: memberId,
+        status: "PENDING"
+      }
+    })
+
+    return NextResponse.json(
+      { success: true, message: "Event submitted successfully", event: newEvent },
+      { status: 201 }
+    )
+  } catch (error: any) {
+    console.error("API Error in POST /events:", error)
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error?.message || "" },
+      { status: 500 }
+    )
+  }
+}
+
+// ====================================================
+// 3. GET /api/events/[id] (Get a single event's details)
+// ====================================================
+export async function getEventById(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify event ID is a valid UUID format
+    if (!isValidUUID(id)) {
+      return NextResponse.json({ error: "Invalid event ID format" }, { status: 400 })
+    }
+
+    // Look up this specific event by its ID
+    const event = await prisma.events.findUnique({
+      where: { id }
+    })
+
+    // If it doesn't exist, tell them so
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    }
+
+    return NextResponse.json(event, { status: 200 })
+  } catch (error: any) {
+    console.error("Failed to fetch event:", error)
+    return NextResponse.json(
+      { error: `Failed to fetch event: ${error.message}` },
+      { status: 500 }
+    )
+  }
+}
+
+// ====================================================
+// 4. PUT /api/events/[id] (Edit an event)
+// ====================================================
+export async function updateEvent(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify event ID is a valid UUID format
+    if (!isValidUUID(id)) {
+      return NextResponse.json({ error: "Invalid event ID format" }, { status: 400 })
+    }
+
+    const existingEvent = await prisma.events.findUnique({
+      where: { id }
+    })
+
+    if (!existingEvent) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    }
+
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const decoded = await decrypt(sessionToken) as { userId: string, role: string }
+    const userRole = decoded?.role
+    const userId = decoded?.userId
+
+    let memberId: string | null = null
+
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      })
+      if (user?.email) {
+        const member = await prisma.members.findUnique({
+          where: { email: user.email }
+        })
+        memberId = member?.id || null
+      }
+    }
+
+    // Ownership check: You must either be an Admin, or the user who submitted the event to edit it.
+    const isAuthorized = userRole === "ADMIN" || (memberId !== null && existingEvent.member_id === memberId)
+
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Forbidden: You don't own this event" }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { title, description, date, time, location, category, price, host } = body
+
+    // Update the database record with the new edits
+    const updatedEvent = await prisma.events.update({
+      where: { id },
+      data: {
+        title,
+        description,
+        date,
+        time,
+        location,
+        category,
+        price: price !== undefined ? price : undefined,
+        host: host !== undefined ? host : undefined,
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Event updated successfully",
+      event: updatedEvent
+    })
+  } catch (error: any) {
+    console.error("Put Event Error:", error)
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error?.message || "" },
+      { status: 500 }
+    )
+  }
+}
+
+// ====================================================
+// 5. DELETE /api/events/[id] (Delete an event)
+// ====================================================
+export async function deleteEvent(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify event ID is a valid UUID format
+    if (!isValidUUID(id)) {
+      return NextResponse.json({ error: "Invalid event ID format" }, { status: 400 })
+    }
+
+    const existingEvent = await prisma.events.findUnique({
+      where: { id }
+    })
+
+    if (!existingEvent) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    }
+
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const decoded = await decrypt(sessionToken) as { userId: string, role: string }
+    const userRole = decoded?.role
+    const userId = decoded?.userId
+
+    let memberId: string | null = null
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      })
+      if (user?.email) {
+        const member = await prisma.members.findUnique({
+          where: { email: user.email }
+        })
+        memberId = member?.id || null
+      }
+    }
+
+    // Ownership check: You must either be an Admin, or the user who submitted the event to delete it.
+    const isAuthorized = userRole === "ADMIN" || (memberId !== null && existingEvent.member_id === memberId)
+
+    if (!isAuthorized) {
+      return NextResponse.json({ error: "Forbidden, Not authorized to delete this event" }, { status: 403 })
+    }
+
+    // Remove the event from the database
+    const deletedEvent = await prisma.events.delete({
+      where: { id }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Event deleted successfully",
+      event: deletedEvent
+    })
+  } catch (error: any) {
+    console.error("DELETE Event Error:", error)
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error?.message || "" },
+      { status: 500 }
+    )
+  }
+}
+
+// ====================================================
+// 6. PATCH /api/events/[id]/status (Approve or Reject status)
+// ====================================================
+export async function updateEventStatus(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify event ID is a valid UUID format
+    if (!isValidUUID(id)) {
+      return NextResponse.json({ error: "Invalid event ID format" }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const decoded = await decrypt(sessionToken) as { role: string }
+    const userRole = decoded?.role
+
+    // Admin only guard: Only Admins can approve or reject event submissions
+    if (userRole !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden: Only admins can approve or reject events." }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { status } = body
+
+    if (!status || !["APPROVED", "REJECTED"].includes(status)) {
+      return NextResponse.json({ error: "Invalid status. Must be APPROVED OR REJECTED" }, { status: 400 })
+    }
+
+    // Update status to either APPROVED or REJECTED
+    const updatedEvent = await prisma.events.update({
+      where: { id },
+      data: {
+        status: status as "APPROVED" | "REJECTED"
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: `Event status updated to ${status} successfully`,
+      event: updatedEvent
+    })
+  } catch (error: any) {
+    console.error("Failed to update event status:", error)
+    return NextResponse.json(
+      { error: `Failed to update event status: ${error.message}` },
+      { status: 500 }
+    )
+  }
+}
+
+// ====================================================
+// 7. PATCH /api/events/[id]/feature (Toggle Featured)
+// ====================================================
+export async function toggleEventFeature(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify event ID is a valid UUID format
+    if (!isValidUUID(id)) {
+      return NextResponse.json({ error: "Invalid event ID format" }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const decoded = await decrypt(sessionToken) as { role: string }
+    const userRole = decoded?.role
+
+    // Admin only guard: Only Admins can feature/highlight events
+    if (userRole !== "ADMIN") {
+      return NextResponse.json({ error: "Forbidden: Only admins can feature events." }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { featured } = body
+
+    if (typeof featured !== "boolean") {
+      return NextResponse.json({ error: "Invalid featured value. Must be a boolean (true/false)" }, { status: 400 })
+    }
+
+    // Toggle the featured column in the database (true/false)
+    const updatedEvent = await prisma.events.update({
+      where: { id },
+      data: { featured }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: `Event featured status updated successfully`,
+      event: updatedEvent
+    })
+  } catch (error: any) {
+    console.error("Failed to update event featured status:", error)
+    return NextResponse.json(
+      { error: `Failed to update featured status: ${error.message}` },
+      { status: 500 }
+    )
+  }
+}
