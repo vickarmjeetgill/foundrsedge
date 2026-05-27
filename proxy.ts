@@ -45,11 +45,14 @@ export default async function proxy(request: NextRequest) {
             return response;
         }
 
-        const loginUrl = new URL('/login', request.url);
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = '/login';
+        loginUrl.search = '';
         return NextResponse.redirect(loginUrl);
     }
 
     return NextResponse.next();
+   
 }
 
 export const config = {
