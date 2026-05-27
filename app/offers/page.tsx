@@ -18,6 +18,9 @@ export type Offer = {
   status: 'pending' | 'approved' | 'rejected';
   featured: boolean;
   submittedAt: string;
+  foundersEdgeDiscount?: string;
+  eventsPageUrl?: string;
+  howToRedeem?: string;
 };
 
 const offerCategories = [

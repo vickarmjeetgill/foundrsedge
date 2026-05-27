@@ -19,6 +19,9 @@ type FormData = {
   category: string;
   location: string;
   expiryDate: string;
+  foundersEdgeDiscount: string;
+  eventsPageUrl: string;
+  howToRedeem: string;
   agreeGuidelines: boolean;
 };
 
@@ -35,6 +38,9 @@ const initialForm: FormData = {
   category: 'Professional Services',
   location: '',
   expiryDate: '',
+  foundersEdgeDiscount: '',
+  eventsPageUrl: '',
+  howToRedeem: '',
   agreeGuidelines: false,
 };
 
@@ -75,6 +81,8 @@ function validateForm(form: FormData): FormErrors {
   if (!form.description.trim() || form.description.trim().length < 20)
     errors.description = 'Description must be at least 20 characters.';
   if (!form.expiryDate) errors.expiryDate = 'Expiry date is required.';
+  if (!form.howToRedeem.trim() || form.howToRedeem.trim().length < 10)
+    errors.howToRedeem = 'Please explain how to redeem this offer (min 10 characters).';
   if (!form.agreeGuidelines) errors.agreeGuidelines = 'You must agree to the offer guidelines.';
   return errors;
 }
@@ -111,17 +119,20 @@ function OfferSubmitContent() {
     else if (type === 'custom') customDiscount = found.discount;
 
     setForm({
-      businessName:    found.businessName,
-      title:           found.title,
+      businessName:         found.businessName,
+      title:                found.title,
       type,
       discountValue,
-      discountUnit:    '% off',
+      discountUnit:         '% off',
       customDiscount,
-      description:     found.description,
-      category:        found.category,
-      location:        found.location || '',
-      expiryDate:      found.expiryDate || '',
-      agreeGuidelines: true,
+      description:          found.description,
+      category:             found.category,
+      location:             found.location || '',
+      expiryDate:           found.expiryDate || '',
+      foundersEdgeDiscount: found.foundersEdgeDiscount || '',
+      eventsPageUrl:        found.eventsPageUrl || '',
+      howToRedeem:          found.howToRedeem || '',
+      agreeGuidelines:      true,
     });
   }, [editId]);
 
@@ -133,24 +144,27 @@ function OfferSubmitContent() {
     if (isEditing && offerId) {
       const updated = existing.map(o =>
         o.id === offerId
-          ? { ...o, businessName: formData.businessName, title: formData.title, type: formData.type, discount, description: formData.description, category: formData.category, location: formData.location, expiryDate: formData.expiryDate, status: 'pending' as const, updatedAt: new Date().toISOString() }
+          ? { ...o, businessName: formData.businessName, title: formData.title, type: formData.type, discount, description: formData.description, category: formData.category, location: formData.location, expiryDate: formData.expiryDate, foundersEdgeDiscount: formData.foundersEdgeDiscount || undefined, eventsPageUrl: formData.eventsPageUrl || undefined, howToRedeem: formData.howToRedeem, status: 'pending' as const, updatedAt: new Date().toISOString() }
           : o
       );
       localStorage.setItem('fe_my_offers', JSON.stringify(updated));
     } else {
       const newOffer: Offer = {
-        id:           `offer_${Date.now()}`,
-        businessName: formData.businessName,
-        title:        formData.title,
-        type:         formData.type,
+        id:                   `offer_${Date.now()}`,
+        businessName:         formData.businessName,
+        title:                formData.title,
+        type:                 formData.type,
         discount,
-        description:  formData.description,
-        category:     formData.category,
-        location:     formData.location,
-        expiryDate:   formData.expiryDate,
-        status:       'pending',
-        featured:     false,
-        submittedAt:  new Date().toISOString(),
+        description:          formData.description,
+        category:             formData.category,
+        location:             formData.location,
+        expiryDate:           formData.expiryDate,
+        foundersEdgeDiscount: formData.foundersEdgeDiscount || undefined,
+        eventsPageUrl:        formData.eventsPageUrl || undefined,
+        howToRedeem:          formData.howToRedeem,
+        status:               'pending',
+        featured:             false,
+        submittedAt:          new Date().toISOString(),
       };
       localStorage.setItem('fe_my_offers', JSON.stringify([...existing, newOffer]));
     }
@@ -435,6 +449,60 @@ function OfferSubmitContent() {
                   />
                   {errors.expiryDate && <div style={{ color: '#c0392b', fontSize: '12px', marginTop: 6, fontFamily: 'DM Sans, sans-serif' }}>{errors.expiryDate}</div>}
                 </div>
+              </div>
+
+              {/* Founders Edge Recommended Discount */}
+              <div style={{ marginTop: 20 }}>
+                <label style={{ display: 'block', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8, color: '#2a2820' }}>
+                  Founders Edge Recommended Discount
+                </label>
+                <input
+                  className="input-field"
+                  value={form.foundersEdgeDiscount}
+                  onChange={e => handleChange('foundersEdgeDiscount', e.target.value)}
+                  placeholder="e.g. 15% exclusively for Founders Edge members"
+                  style={{ margin: 0 }}
+                  disabled={atLimit}
+                />
+                <div style={{ fontSize: '12px', color: '#9a9585', marginTop: 6, fontFamily: 'Noto Serif, serif' }}>
+                  Optional — add a specific discount exclusive to Founders Edge members beyond your standard offer.
+                </div>
+              </div>
+
+              {/* Events Page Link */}
+              <div style={{ marginTop: 20 }}>
+                <label style={{ display: 'block', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8, color: '#2a2820' }}>
+                  Your Events Page Link
+                </label>
+                <input
+                  className="input-field"
+                  type="url"
+                  value={form.eventsPageUrl}
+                  onChange={e => handleChange('eventsPageUrl', e.target.value)}
+                  placeholder="https://yourbusiness.com/events"
+                  style={{ margin: 0 }}
+                  disabled={atLimit}
+                />
+                <div style={{ fontSize: '12px', color: '#9a9585', marginTop: 6, fontFamily: 'Noto Serif, serif' }}>
+                  Optional — link members directly to your events or booking page.
+                </div>
+              </div>
+
+              {/* How to Redeem */}
+              <div style={{ marginTop: 20 }}>
+                <label style={{ display: 'block', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 8, color: '#2a2820' }}>
+                  How to Redeem *
+                </label>
+                <textarea
+                  className="input-field"
+                  value={form.howToRedeem}
+                  onChange={e => handleChange('howToRedeem', e.target.value)}
+                  placeholder="e.g. Mention Founders Edge when booking. Email hello@yourbusiness.com with subject 'FE Offer'. Use promo code FE2026 at checkout."
+                  rows={3}
+                  style={{ resize: 'vertical', fontFamily: 'Noto Serif, serif' }}
+                  disabled={atLimit}
+                />
+                {errors.howToRedeem && <div style={{ color: '#c0392b', fontSize: '12px', marginTop: 6, fontFamily: 'DM Sans, sans-serif' }}>{errors.howToRedeem}</div>}
               </div>
             </div>
 

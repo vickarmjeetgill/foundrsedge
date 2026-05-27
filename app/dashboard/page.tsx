@@ -5,6 +5,7 @@ import {
   Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star,
   ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User,
   Plus, Pencil, Trash2, Tag, ExternalLink, CheckCircle,
+  UserCircle, Globe, MapPin,
 } from 'lucide-react';
 import type { Nomination } from '@/app/awards/nominate/page';
 import Logo from '@/components/Logo';
@@ -12,7 +13,7 @@ import { supabase } from '@/lib/supabase';
 import { logout } from '@/app/actions/auth';
 import { getProfile } from '@/app/actions/profile';
 
-type Section = 'dashboard' | 'events' | 'offers' | 'awards';
+type Section = 'dashboard' | 'events' | 'offers' | 'awards' | 'business' | 'owners';
 
 const defaultMember = {
   name: 'Loading User',
@@ -43,7 +44,8 @@ const navItems: { icon: React.ElementType; label: string; section?: Section; hre
   { icon: Calendar,   label: 'Events',     section: 'events' },
   { icon: Tag,        label: 'Offers',     section: 'offers' },
   { icon: Trophy,     label: 'Awards',     section: 'awards' },
-  { icon: Building2,  label: 'Directory',  href: '/directory' },
+  { icon: Building2,  label: 'Business',   section: 'business' },
+  { icon: UserCircle, label: 'Owners',     section: 'owners' },
   { icon: Users,      label: 'My Matches', href: '/dashboard/matches' },
   { icon: BookOpen,   label: 'Resources',  href: '/resources' },
   { icon: Star,       label: 'Supper Club', href: '/supper-club' },
@@ -81,7 +83,480 @@ const sectionTitles: Record<Section, string> = {
   events:    'My Events',
   offers:    'My Offers',
   awards:    'My Awards',
+  business:  'Business Profiles',
+  owners:    'Owner Network',
 };
+
+// ── Shared label style ───────────────────────────────────────────
+const labelStyle: React.CSSProperties = {
+  display: 'block', fontFamily: 'DM Sans, sans-serif', fontWeight: 700,
+  fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase',
+  marginBottom: 8, color: '#2a2820',
+};
+
+// ── Profile types ────────────────────────────────────────────────
+type BusinessProfile = {
+  id: string; name: string; industry: string; location: string;
+  description: string; website?: string; lookingFor?: string;
+  tags: string[]; createdAt: string;
+};
+
+type OwnerProfile = {
+  id: string; name: string; title: string; business: string;
+  bio: string; lookingFor?: string; tags: string[]; createdAt: string;
+};
+
+type OwnerPost = {
+  id: string; ownerName: string; business: string;
+  type: 'seeking' | 'offering'; headline: string; details: string;
+  tags: string[]; postedAt: string; isOwn?: boolean;
+};
+
+const bizIndustries = [
+  'Technology', 'Professional Services', 'Manufacturing', 'Marketing Agency',
+  'E-commerce', 'Finance', 'Legal', 'Health & Wellness', 'Construction', 'B2B SaaS', 'Other',
+];
+
+// ── Business Section ─────────────────────────────────────────────
+function BusinessSection({ memberBusiness }: { memberBusiness: string }) {
+  const [myProfile, setMyProfile]     = useState<BusinessProfile | null>(null);
+  const [allProfiles, setAllProfiles] = useState<BusinessProfile[]>([]);
+  const [editMode, setEditMode]       = useState(false);
+  const [form, setForm]               = useState({
+    name: '', industry: 'Technology', location: 'Calgary, AB',
+    description: '', website: '', lookingFor: '', tags: '',
+  });
+
+  useEffect(() => {
+    const myRaw = localStorage.getItem('fe_my_biz_profile');
+    if (myRaw) {
+      try {
+        const p: BusinessProfile = JSON.parse(myRaw);
+        setMyProfile(p);
+        setForm({ name: p.name, industry: p.industry, location: p.location, description: p.description, website: p.website || '', lookingFor: p.lookingFor || '', tags: p.tags.join(', ') });
+      } catch {}
+    } else {
+      setEditMode(true);
+      setForm(f => ({ ...f, name: memberBusiness !== 'Founders Edge Member' ? memberBusiness : '' }));
+    }
+    const allRaw = localStorage.getItem('fe_biz_profiles');
+    if (allRaw) { try { setAllProfiles(JSON.parse(allRaw)); } catch {} }
+  }, [memberBusiness]);
+
+  function saveProfile() {
+    if (!form.name.trim() || !form.description.trim()) return;
+    const profile: BusinessProfile = {
+      id: myProfile?.id || `biz_${Date.now()}`,
+      name: form.name, industry: form.industry, location: form.location,
+      description: form.description, website: form.website,
+      lookingFor: form.lookingFor,
+      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      createdAt: myProfile?.createdAt || new Date().toISOString(),
+    };
+    localStorage.setItem('fe_my_biz_profile', JSON.stringify(profile));
+    const existing: BusinessProfile[] = JSON.parse(localStorage.getItem('fe_biz_profiles') || '[]');
+    const idx = existing.findIndex(p => p.id === profile.id);
+    const updated = idx >= 0 ? existing.map(p => p.id === profile.id ? profile : p) : [...existing, profile];
+    localStorage.setItem('fe_biz_profiles', JSON.stringify(updated));
+    setMyProfile(profile); setAllProfiles(updated); setEditMode(false);
+  }
+
+  const otherProfiles = myProfile ? allProfiles.filter(p => p.id !== myProfile.id) : allProfiles;
+
+  return (
+    <div style={{ padding: '40px' }}>
+      {/* My Business Profile */}
+      <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px', marginBottom: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px', marginBottom: 4 }}>My Business Profile</h2>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>Visible to all Founders Edge members</div>
+          </div>
+          {myProfile && !editMode && (
+            <button onClick={() => setEditMode(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', color: '#5a5650', transition: 'all 0.2s' }}>
+              <Pencil size={13} /> Edit Profile
+            </button>
+          )}
+        </div>
+
+        {editMode ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={labelStyle}>Business Name *</label>
+                <input className="input-field" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Your business name" style={{ margin: 0 }} />
+              </div>
+              <div>
+                <label style={labelStyle}>Industry</label>
+                <select className="select-field" value={form.industry} onChange={e => setForm(p => ({ ...p, industry: e.target.value }))}>
+                  {bizIndustries.map(i => <option key={i}>{i}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Location</label>
+                <input className="input-field" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Calgary, AB" style={{ margin: 0 }} />
+              </div>
+              <div>
+                <label style={labelStyle}>Website</label>
+                <input className="input-field" type="url" value={form.website} onChange={e => setForm(p => ({ ...p, website: e.target.value }))} placeholder="https://yourbusiness.com" style={{ margin: 0 }} />
+              </div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Business Description *</label>
+              <textarea className="input-field" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="What does your business do? Who do you serve?" rows={3} style={{ resize: 'vertical', fontFamily: 'Noto Serif, serif' }} />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Currently Looking For</label>
+              <input className="input-field" value={form.lookingFor} onChange={e => setForm(p => ({ ...p, lookingFor: e.target.value }))} placeholder="e.g. Looking to hire a sales lead, seeking a strategic partner in tech..." style={{ margin: 0 }} />
+              <div style={{ fontSize: '12px', color: '#9a9585', marginTop: 6, fontFamily: 'Noto Serif, serif' }}>Optional — let other members know what your business needs right now.</div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={labelStyle}>Tags (comma-separated)</label>
+              <input className="input-field" value={form.tags} onChange={e => setForm(p => ({ ...p, tags: e.target.value }))} placeholder="e.g. SaaS, B2B, Growth, Calgary, Tech" style={{ margin: 0 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={saveProfile} className="btn-primary" style={{ padding: '12px 28px', fontSize: '13px' }}>Save Business Profile</button>
+              {myProfile && (
+                <button onClick={() => setEditMode(false)} style={{ padding: '12px 24px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', color: '#5a5650' }}>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        ) : myProfile ? (
+          <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 260 }}>
+              <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px', marginBottom: 10 }}>{myProfile.name}</h3>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 14 }}>
+                <span className="tag">{myProfile.industry}</span>
+                {myProfile.location && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '13px', color: '#9a9585' }}>
+                    <MapPin size={12} style={{ color: '#e7b605' }} />{myProfile.location}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, marginBottom: 16 }}>{myProfile.description}</p>
+              {myProfile.website && (
+                <a href={myProfile.website} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#9b7011', fontSize: '13px', fontWeight: 700, textDecoration: 'none', marginBottom: 16 }}>
+                  <Globe size={14} /> {myProfile.website.replace(/^https?:\/\//, '')}
+                </a>
+              )}
+              {myProfile.lookingFor && (
+                <div style={{ padding: '12px 16px', background: 'rgba(231,182,5,0.06)', borderLeft: '3px solid #e7b605' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#9b7011', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Currently Looking For</div>
+                  <div style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px' }}>{myProfile.lookingFor}</div>
+                </div>
+              )}
+            </div>
+            {myProfile.tags.length > 0 && (
+              <div style={{ flexShrink: 0 }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Services & Tags</div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', maxWidth: 220 }}>
+                  {myProfile.tags.map(t => (
+                    <span key={t} style={{ padding: '3px 10px', background: '#f0efe9', fontSize: '11px', color: '#5a5650', fontWeight: 600, borderRadius: 2 }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </div>
+
+      {/* Business Directory */}
+      <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px', marginBottom: 4 }}>Member Businesses</h2>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>{otherProfiles.length} other business{otherProfiles.length !== 1 ? 'es' : ''} in the network</div>
+          </div>
+        </div>
+        {otherProfiles.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', borderTop: '1px solid #f0efe9' }}>
+            <Building2 size={40} style={{ color: '#e2e0d8', marginBottom: 16 }} />
+            <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9a9585', marginBottom: 8 }}>No other businesses yet</div>
+            <div style={{ fontSize: '14px', color: '#b8b4ae', fontFamily: 'Noto Serif, serif' }}>Other member business profiles will appear here once created.</div>
+          </div>
+        ) : (
+          <div className="grid-2">
+            {otherProfiles.map(p => (
+              <div key={p.id} className="card" style={{ borderLeft: '4px solid transparent' }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+                  <span className="tag">{p.industry}</span>
+                  {p.location && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '12px', color: '#9a9585' }}>
+                      <MapPin size={11} style={{ color: '#e7b605' }} />{p.location}
+                    </span>
+                  )}
+                </div>
+                <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px', marginBottom: 8 }}>{p.name}</h3>
+                <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, marginBottom: 12 }}>{p.description}</p>
+                {p.lookingFor && (
+                  <div style={{ marginBottom: 12, padding: '10px 14px', background: 'rgba(231,182,5,0.06)', borderLeft: '3px solid #e7b605' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#9b7011', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 3 }}>Looking For</div>
+                    <div style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '13px' }}>{p.lookingFor}</div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                  {p.tags.map(t => <span key={t} style={{ padding: '3px 8px', background: '#f0efe9', fontSize: '11px', color: '#5a5650', fontWeight: 600, borderRadius: 2 }}>{t}</span>)}
+                </div>
+                <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: '1px solid #f0efe9' }}>
+                  {p.website && (
+                    <a href={p.website} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', border: '1px solid #e2e0d8', color: '#5a5650', fontSize: '12px', fontWeight: 700, textDecoration: 'none', fontFamily: 'DM Sans, sans-serif' }}>
+                      <Globe size={12} /> Website
+                    </a>
+                  )}
+                  <button className="btn-primary" style={{ padding: '7px 14px', fontSize: '12px' }}>
+                    <MessageSquare size={12} /> Connect
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Owners Section ───────────────────────────────────────────────
+function OwnersSection({ memberName, memberBusiness }: { memberName: string; memberBusiness: string }) {
+  const [myProfile, setMyProfile]       = useState<OwnerProfile | null>(null);
+  const [posts, setPosts]               = useState<OwnerPost[]>([]);
+  const [editMode, setEditMode]         = useState(false);
+  const [showPostForm, setShowPostForm] = useState(false);
+  const [form, setForm]                 = useState({ name: '', title: '', business: '', bio: '', lookingFor: '', tags: '' });
+  const [postForm, setPostForm]         = useState({ type: 'seeking' as 'seeking' | 'offering', headline: '', details: '', tags: '' });
+
+  useEffect(() => {
+    const myRaw = localStorage.getItem('fe_my_owner_profile');
+    if (myRaw) {
+      try {
+        const p: OwnerProfile = JSON.parse(myRaw);
+        setMyProfile(p);
+        setForm({ name: p.name, title: p.title, business: p.business, bio: p.bio, lookingFor: p.lookingFor || '', tags: p.tags.join(', ') });
+      } catch {}
+    } else {
+      setEditMode(true);
+      setForm(f => ({
+        ...f,
+        name:     memberName !== 'Loading User' ? memberName : '',
+        business: memberBusiness !== 'Founders Edge Member' ? memberBusiness : '',
+      }));
+    }
+    const postsRaw = localStorage.getItem('fe_owner_posts');
+    if (postsRaw) { try { setPosts(JSON.parse(postsRaw)); } catch {} }
+  }, [memberName, memberBusiness]);
+
+  function saveProfile() {
+    if (!form.name.trim() || !form.bio.trim()) return;
+    const profile: OwnerProfile = {
+      id: myProfile?.id || `owner_${Date.now()}`,
+      name: form.name, title: form.title, business: form.business, bio: form.bio,
+      lookingFor: form.lookingFor,
+      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      createdAt: myProfile?.createdAt || new Date().toISOString(),
+    };
+    localStorage.setItem('fe_my_owner_profile', JSON.stringify(profile));
+    setMyProfile(profile); setEditMode(false);
+  }
+
+  function submitPost() {
+    if (!postForm.headline.trim() || !postForm.details.trim()) return;
+    const post: OwnerPost = {
+      id: `post_${Date.now()}`,
+      ownerName: myProfile?.name || memberName,
+      business:  myProfile?.business || memberBusiness,
+      type: postForm.type, headline: postForm.headline, details: postForm.details,
+      tags: postForm.tags.split(',').map(t => t.trim()).filter(Boolean),
+      postedAt: new Date().toISOString(), isOwn: true,
+    };
+    const updated = [post, ...posts];
+    localStorage.setItem('fe_owner_posts', JSON.stringify(updated));
+    setPosts(updated);
+    setPostForm({ type: 'seeking', headline: '', details: '', tags: '' });
+    setShowPostForm(false);
+  }
+
+  function deletePost(id: string) {
+    const updated = posts.filter(p => p.id !== id);
+    localStorage.setItem('fe_owner_posts', JSON.stringify(updated));
+    setPosts(updated);
+  }
+
+  return (
+    <div style={{ padding: '40px' }}>
+      {/* My Owner Profile */}
+      <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px', marginBottom: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px', marginBottom: 4 }}>My Owner Profile</h2>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>Your personal founder presence in the network</div>
+          </div>
+          {myProfile && !editMode && (
+            <button onClick={() => setEditMode(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '10px 18px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', color: '#5a5650', transition: 'all 0.2s' }}>
+              <Pencil size={13} /> Edit Profile
+            </button>
+          )}
+        </div>
+
+        {editMode ? (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={labelStyle}>Full Name *</label>
+                <input className="input-field" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Your full name" style={{ margin: 0 }} />
+              </div>
+              <div>
+                <label style={labelStyle}>Title / Role</label>
+                <input className="input-field" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Founder & CEO, Co-Founder" style={{ margin: 0 }} />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>Business</label>
+                <input className="input-field" value={form.business} onChange={e => setForm(p => ({ ...p, business: e.target.value }))} placeholder="Your business name" style={{ margin: 0 }} />
+              </div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Bio *</label>
+              <textarea className="input-field" value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))} placeholder="Tell the network about yourself — your background, what you're building, what drives you..." rows={4} style={{ resize: 'vertical', fontFamily: 'Noto Serif, serif' }} />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Looking to Grow — What Do You Need?</label>
+              <input className="input-field" value={form.lookingFor} onChange={e => setForm(p => ({ ...p, lookingFor: e.target.value }))} placeholder="e.g. Looking to scale my sales team, need a fractional CFO, seeking a co-founder in tech..." style={{ margin: 0 }} />
+              <div style={{ fontSize: '12px', color: '#9a9585', marginTop: 6, fontFamily: 'Noto Serif, serif' }}>This shows prominently on your profile — let others know how they can help you.</div>
+            </div>
+            <div style={{ marginBottom: 24 }}>
+              <label style={labelStyle}>Tags (comma-separated)</label>
+              <input className="input-field" value={form.tags} onChange={e => setForm(p => ({ ...p, tags: e.target.value }))} placeholder="e.g. Bootstrapped, SaaS, Series A, Calgary" style={{ margin: 0 }} />
+            </div>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button onClick={saveProfile} className="btn-primary" style={{ padding: '12px 28px', fontSize: '13px' }}>Save Owner Profile</button>
+              {myProfile && (
+                <button onClick={() => setEditMode(false)} style={{ padding: '12px 24px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', color: '#5a5650' }}>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        ) : myProfile ? (
+          <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ width: 56, height: 56, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '22px', color: '#000', flexShrink: 0 }}>
+              {myProfile.name.charAt(0)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 4 }}>{myProfile.name}</h3>
+              <div style={{ fontSize: '14px', color: '#9b7011', fontWeight: 600, marginBottom: 12 }}>
+                {myProfile.title}{myProfile.title && myProfile.business ? ' · ' : ''}{myProfile.business}
+              </div>
+              <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, marginBottom: myProfile.lookingFor ? 16 : 0 }}>{myProfile.bio}</p>
+              {myProfile.lookingFor && (
+                <div style={{ padding: '12px 16px', background: 'rgba(231,182,5,0.06)', borderLeft: '3px solid #e7b605' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#9b7011', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>Looking to Grow</div>
+                  <div style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px' }}>{myProfile.lookingFor}</div>
+                </div>
+              )}
+              {myProfile.tags.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 16 }}>
+                  {myProfile.tags.map(t => <span key={t} style={{ padding: '3px 10px', background: '#f0efe9', fontSize: '11px', color: '#5a5650', fontWeight: 600, borderRadius: 2 }}>{t}</span>)}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Owner Board */}
+      <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div>
+            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px', marginBottom: 4 }}>Member Board</h2>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>What founders are seeking and offering</div>
+          </div>
+          {myProfile && (
+            <button onClick={() => setShowPostForm(!showPostForm)} className={showPostForm ? 'btn-outline' : 'btn-primary'} style={{ fontSize: '12px', padding: '10px 18px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              {showPostForm ? 'Cancel' : <><Plus size={14} /> Post a Need</>}
+            </button>
+          )}
+        </div>
+
+        {/* Post Form */}
+        {showPostForm && (
+          <div style={{ background: '#f9f9f7', border: '1px solid #e2e0d8', padding: '24px', marginBottom: 24 }}>
+            <div className="section-label" style={{ marginBottom: 16 }}>New Post</div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              {(['seeking', 'offering'] as const).map(t => (
+                <button key={t} type="button" onClick={() => setPostForm(p => ({ ...p, type: t }))} style={{ padding: '10px 20px', border: '2px solid', borderColor: postForm.type === t ? '#e7b605' : '#e2e0d8', background: postForm.type === t ? 'rgba(231,182,5,0.06)' : '#fff', fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '13px', cursor: 'pointer', color: postForm.type === t ? '#9b7011' : '#9a9585', textTransform: 'capitalize' }}>
+                  {t === 'seeking' ? '🔍 Seeking' : '🤝 Offering'}
+                </button>
+              ))}
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Headline *</label>
+              <input className="input-field" value={postForm.headline} onChange={e => setPostForm(p => ({ ...p, headline: e.target.value }))} placeholder={postForm.type === 'seeking' ? 'e.g. Looking to hire a VP of Sales' : 'e.g. Offering free financial planning session'} style={{ margin: 0 }} />
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label style={labelStyle}>Details *</label>
+              <textarea className="input-field" value={postForm.details} onChange={e => setPostForm(p => ({ ...p, details: e.target.value }))} placeholder={postForm.type === 'seeking' ? 'Describe what you need, ideal experience, budget range...' : 'Describe what you are offering, who it is for, any conditions...'} rows={3} style={{ resize: 'vertical', fontFamily: 'Noto Serif, serif' }} />
+            </div>
+            <div style={{ marginBottom: 20 }}>
+              <label style={labelStyle}>Tags (comma-separated)</label>
+              <input className="input-field" value={postForm.tags} onChange={e => setPostForm(p => ({ ...p, tags: e.target.value }))} placeholder="e.g. HR, Sales, Tech, Finance" style={{ margin: 0 }} />
+            </div>
+            <button onClick={submitPost} className="btn-primary" style={{ padding: '12px 28px', fontSize: '13px' }}>Post to Board</button>
+          </div>
+        )}
+
+        {posts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', borderTop: '1px solid #f0efe9' }}>
+            <Users size={40} style={{ color: '#e2e0d8', marginBottom: 16 }} />
+            <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9a9585', marginBottom: 8 }}>No posts yet</div>
+            <div style={{ fontSize: '14px', color: '#b8b4ae', fontFamily: 'Noto Serif, serif', maxWidth: 380, margin: '0 auto' }}>
+              Be the first to post what you're looking for. Other members will see your post and reach out.
+            </div>
+          </div>
+        ) : (
+          <div>
+            {posts.map(post => (
+              <div key={post.id} style={{ padding: '20px', background: '#f9f9f7', border: '1px solid #e2e0d8', borderLeft: `4px solid ${post.type === 'seeking' ? '#e7b605' : '#27ae60'}`, marginBottom: 2 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 12px', background: post.type === 'seeking' ? 'rgba(231,182,5,0.12)' : 'rgba(39,174,96,0.1)', color: post.type === 'seeking' ? '#9b7011' : '#27ae60', fontSize: '11px', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    {post.type === 'seeking' ? '🔍 Seeking' : '🤝 Offering'}
+                  </span>
+                  {post.isOwn && (
+                    <button onClick={() => { if (confirm('Remove this post?')) deletePost(post.id); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.2s' }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}
+                    >
+                      <Trash2 size={11} /> Remove
+                    </button>
+                  )}
+                </div>
+                <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '17px', marginBottom: 8, color: '#2a2820' }}>{post.headline}</h3>
+                <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, marginBottom: 12 }}>{post.details}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                    {post.tags.map(t => <span key={t} style={{ padding: '3px 8px', background: '#f0efe9', fontSize: '11px', color: '#5a5650', fontWeight: 600, borderRadius: 2 }}>{t}</span>)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#9a9585' }}>
+                    <span style={{ fontWeight: 700, color: '#2a2820' }}>{post.ownerName}</span>
+                    {post.business && <> · {post.business}</>}
+                    {' · '}{new Date(post.postedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  </div>
+                </div>
+                {!post.isOwn && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e2e0d8' }}>
+                    <button className="btn-primary" style={{ padding: '7px 16px', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                      <MessageSquare size={12} /> Reach Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
@@ -705,6 +1180,8 @@ export default function DashboardPage() {
         {activeSection === 'events'    && <EventsSection />}
         {activeSection === 'offers'    && <OffersSection />}
         {activeSection === 'awards'    && <AwardsSection />}
+        {activeSection === 'business'  && <BusinessSection memberBusiness={member.business} />}
+        {activeSection === 'owners'    && <OwnersSection memberName={member.name} memberBusiness={member.business} />}
       </main>
     </div>
   );
