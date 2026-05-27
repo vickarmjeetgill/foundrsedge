@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList, Tag } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { getProfile } from '@/app/actions/profile';
 
 type Tab = 'events' | 'directory' | 'resources' | 'awards' | 'webinars' | 'supperclub';
 
@@ -548,6 +549,22 @@ function ItemTable<T extends { id: string | number }>({ items, columns, getRow, 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const router = useRouter();
+  useEffect(() => {
+  const checkAdminAccess = async () => {
+    const res = await getProfile();
+
+    if (!res.success || !res.user) {
+      router.push('/login');
+      return;
+    }
+
+    if ((res.user as any).role !== 'ADMIN') {
+      router.push('/dashboard');
+    }
+  };
+
+  checkAdminAccess();
+}, [router]);
   const [activeTab, setActiveTab] = useState<Tab>('events');
   const [successMsg, setSuccessMsg] = useState('');
 

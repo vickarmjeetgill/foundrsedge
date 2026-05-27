@@ -568,17 +568,68 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const loadProfile = async () => {
-      const res = await getProfile();
-      if (res.success && res.user) {
-        setUserProfile(res.user);
-        setMember(prev => ({
-          ...prev,
-          name: (res.user as any).name || prev.name,
-          business: 'Founders Edge Member',
-          industry: 'Member',
-        }));
-      }
-    };
+  const res = await getProfile();
+
+  if (!res.success || !res.user) {
+    return;
+  }
+
+  const loggedInUser = res.user as any;
+
+  setUserProfile(loggedInUser);
+
+  const userEmail = loggedInUser.email || '';
+  const userName = loggedInUser.name || 'Member';
+
+  const { data, error } = await supabase
+    .from('members')
+    .select(`
+      first_name,
+      last_name,
+      email,
+      stage,
+      industry,
+      created_at,
+      businesses (
+        business_name,
+        business_type
+      )
+    `)
+    .eq('email', userEmail)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Member/business lookup error:', error.message);
+  }
+
+  if (data) {
+    const businessData = Array.isArray(data.businesses)
+      ? data.businesses[0]
+      : data.businesses;
+
+    setMember({
+      name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
+      business: businessData?.business_name ?? 'Founders Edge Member',
+      industry: data.industry ?? businessData?.business_type ?? 'Member',
+      joined: data.created_at
+        ? new Date(data.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric',
+          })
+        : 'May 2026',
+      profileCompletion: 85,
+    });
+
+    return;
+  }
+
+  setMember(prev => ({
+    ...prev,
+    name: userName,
+    business: 'Founders Edge Member',
+    industry: 'Member',
+  }));
+};
 
     const loadSubmissions = () => {
       const raw = localStorage.getItem('fe_my_submissions');
