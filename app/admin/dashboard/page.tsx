@@ -97,10 +97,10 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [errors, setErrors] = useState<Partial<Record<keyof typeof blankEvent, string>>>({});
   const [editId, setEditId] = useState<string | number | null>(null);
 
-  const set = (k: string, v: string | boolean) => {
-    setForm(f => ({ ...f, [k]: v }));
-    if (errors[k as keyof typeof blankEvent]) {
-      setErrors(prev => ({ ...prev, [k]: undefined }));
+  const set = (key: string, value: string | boolean) => {
+    setForm(prevForm => ({ ...prevForm, [key]: value }));
+    if (errors[key as keyof typeof blankEvent]) {
+      setErrors(prevErrors => ({ ...prevErrors, [key]: undefined }));
     }
   };
 
@@ -535,7 +535,7 @@ function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [form, setForm] = useState(blankDir);
   const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
-  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+  const set = (key: string, value: string | boolean) => setForm(prevForm => ({ ...prevForm, [key]: value }));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -591,7 +591,7 @@ function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [form, setForm] = useState(blankRes);
   const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
-  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+  const set = (key: string, value: string | boolean) => setForm(prevForm => ({ ...prevForm, [key]: value }));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -641,7 +641,7 @@ function AwardsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [form, setForm] = useState(blankAward);
   const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
-  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+  const set = (key: string, value: string | boolean) => setForm(prevForm => ({ ...prevForm, [key]: value }));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -691,7 +691,7 @@ function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [form, setForm] = useState(blankWebinar);
   const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
-  const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const set = (key: string, value: string) => setForm(prevForm => ({ ...prevForm, [key]: value }));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -743,7 +743,7 @@ function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) 
   const [form, setForm] = useState(blankSC);
   const [editId, setEditId] = useState<string | number | null>(null);
   const [nextId, setNextId] = useState(1);
-  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+  const set = (key: string, value: string | boolean) => setForm(prevForm => ({ ...prevForm, [key]: value }));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -850,16 +850,18 @@ export default function AdminDashboard() {
 
     checkAdminAccess();
   }, [router]);
+  // Track which section (Events, Directory, Resources, etc.) is currently open
   const [activeTab, setActiveTab] = useState<Tab>('events');
+  // Store toast/success messages to display banner feedback to the admin
   const [successMsg, setSuccessMsg] = useState('');
 
-
-
+  // Handle administrator log out and clear admin sessions
   async function handleLogout() {
     localStorage.removeItem('fe_admin');
     await logout();
   }
 
+  // Display a success banner temporarily and auto-hide it after 5 seconds
   function showSuccess(msg: string) {
     setSuccessMsg(msg);
     setTimeout(() => setSuccessMsg(''), 5000);
