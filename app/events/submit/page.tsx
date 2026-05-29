@@ -1,9 +1,10 @@
 'use client';
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowLeft, AlertCircle } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
+import { getProfile } from '@/app/actions/profile';
 
 type FormData = {
   title: string;
@@ -45,47 +46,123 @@ const categories = ['Networking', 'Workshop', 'Webinar', 'Supper Club', 'Other']
 
 function validateForm(form: FormData): FormErrors {
   const errors: FormErrors = {};
-  if (!form.title.trim()) errors.title = 'Event title is required.';
-  if (!form.date) errors.date = 'Date is required.';
-  if (!form.time) errors.time = 'Time is required.';
-  if (!form.duration.trim()) errors.duration = 'Duration is required.';
+  if (!form.title.trim()) errors.title = 'Please enter a valid title.';
+  if (!form.date) errors.date = 'Please enter a valid date.';
+  if (!form.time) errors.time = 'Please enter a valid time.';
+
+  if (!form.duration.trim() || isNaN(Number(form.duration)) || Number(form.duration) <= 0) {
+    errors.duration = 'Please enter a valid duration.';
+  }
+
   if (!form.capacity.trim() || isNaN(Number(form.capacity)) || Number(form.capacity) <= 0)
-    errors.capacity = 'Valid capacity is required.';
-  if (!form.isOnline && !form.location.trim()) errors.location = 'Location is required for in-person events.';
+    errors.capacity = 'Please enter a valid capacity.';
+  if (!form.isOnline && !form.location.trim()) errors.location = 'Please enter a valid location.';
   if (!form.description.trim() || form.description.trim().length < 30)
-    errors.description = 'Description must be at least 30 characters.';
-  if (!form.hostName.trim()) errors.hostName = 'Host name is required.';
+    errors.description = 'Please enter a valid description (minimum 30 characters).';
+  if (!form.hostName.trim()) errors.hostName = 'Please enter a valid host name.';
   if (!form.contactEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail))
-    errors.contactEmail = 'Valid contact email is required.';
+    errors.contactEmail = 'Please enter a valid contact email.';
+  if (form.price.trim()) {
+    const trimmedPrice = form.price.trim();
+    const isKnownText = ['free', 'members only', 'members-only', 'invite only', 'invite-only', 'tbd'].includes(trimmedPrice.toLowerCase());
+    const isNumericPrice = /^\$?\d+(?:\.\d{2})?$/.test(trimmedPrice);
+    if (!isKnownText && !isNumericPrice) {
+      errors.price = 'Please enter "Free", "Members Only", or a valid dollar amount (e.g. "$45" or "45").';
+    }
+  }
   if (!form.agreeGuidelines) errors.agreeGuidelines = 'You must agree to the event guidelines.';
   return errors;
 }
 
 function EventSubmitContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const editId = searchParams.get('edit');
 
   const [form, setForm] = useState<FormData>(initialForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [userName, setUserName] = useState('');
+
+  // Verify that the user is logged in
+  useEffect(() => {
+    async function checkAuth() {
+      const res = await getProfile();
+      if (!res.success || !res.user) {
+        router.push('/login?redirect=/events/submit');
+        return;
+      }
+
+      const loggedInUser = res.user as any;
+      setUserEmail(loggedInUser.email || '');
+      setUserName(loggedInUser.name || '');
+
+      // Auto-pre-fill user name and contact email for new submissions
+      if (!editId) {
+        setForm(prev => ({
+          ...prev,
+          hostName: prev.hostName || loggedInUser.name || '',
+          contactEmail: prev.contactEmail || loggedInUser.email || '',
+        }));
+      }
+
+      setAuthChecked(true);
+    }
+    checkAuth();
+  }, [router, editId]);
 
   // Pre-fill form when editing an existing submission
   useEffect(() => {
-    if (!editId) return;
-    const raw = localStorage.getItem('fe_my_submissions');
-    if (!raw) return;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const submissions: any[] = JSON.parse(raw);
-      const match = submissions.find(s => s.id === editId);
-      if (match) {
-        const { id, submittedAt, updatedAt, status, ...formData } = match;
-        setForm(formData as FormData);
-        setIsEditing(true);
+    if (!authChecked || !editId) return;
+    async function fetchEventToEdit() {
+      try {
+        const res = await fetch(`/api/events/${editId}`);
+        if (res.ok) {
+          const dbEvent = await res.json();
+          setForm({
+            title: dbEvent.title || '',
+            category: dbEvent.category || 'Networking',
+            price: dbEvent.price || '',
+            date: dbEvent.date || '',
+            time: dbEvent.time || '',
+            duration: dbEvent.duration ? String(parseFloat(dbEvent.duration) || 2) : '2',
+            capacity: dbEvent.capacity ? String(dbEvent.capacity) : '50',
+            location: dbEvent.location || '',
+            isOnline: dbEvent.location ? (
+              dbEvent.location.toLowerCase().includes('online') ||
+              dbEvent.location.toLowerCase().includes('zoom') ||
+              dbEvent.location.toLowerCase().includes('meeting link') ||
+              dbEvent.location.toLowerCase().includes('provided upon registration')
+            ) : false,
+            description: dbEvent.description || '',
+            hostName: dbEvent.host || '',
+            contactEmail: userEmail || 'member@foundersedge.com',
+            tags: Array.isArray(dbEvent.tags) ? dbEvent.tags.join(', ') : dbEvent.category || '',
+            agreeGuidelines: true,
+          });
+          setIsEditing(true);
+        } else {
+          // Fallback to localStorage just in case
+          const raw = localStorage.getItem('fe_my_submissions');
+          if (raw) {
+            const submissions = JSON.parse(raw);
+            const match = submissions.find((s: any) => s.id === editId);
+            if (match) {
+              const { id, submittedAt, updatedAt, status, ...formData } = match;
+              setForm(formData as FormData);
+              setIsEditing(true);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch event for edit:", err);
       }
-    } catch {}
-  }, [editId]);
+    }
+    fetchEventToEdit();
+  }, [editId, authChecked, userEmail]);
 
   function handleChange(field: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -132,11 +209,55 @@ function EventSubmitContent() {
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
-    // Editing an existing submission — only update localStorage, no duplicate API call
-    if (isEditing) {
-      saveToLocalStorage(form);
-      setSubmitted(true);
-      return;
+
+    // Format the price string dynamically (auto-format numeric amounts like "45" to "$45")
+    let finalPrice = form.price.trim();
+    if (finalPrice) {
+      if (/^\d+(?:\.\d{2})?$/.test(finalPrice)) {
+        finalPrice = `$${finalPrice}`;
+      }
+    } else {
+      finalPrice = 'Free';
+    }
+
+    const formattedDuration = form.duration ? `${form.duration} Hours` : '2 Hours';
+    const updatedForm = { ...form, price: finalPrice, duration: formattedDuration };
+
+    // Editing an existing submission — perform backend PUT request to update the database record
+    if (isEditing && editId) {
+      try {
+        const res = await fetch(`/api/events/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: form.title,
+            description: form.description,
+            date: form.date,
+            time: form.time,
+            location: form.location,
+            category: form.category,
+            price: finalPrice,
+            host: form.hostName,
+            tags: form.tags,
+            capacity: form.capacity,
+            duration: formattedDuration,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setErrorMsg(data.error || 'Failed to update event.');
+          return;
+        }
+
+        saveToLocalStorage(updatedForm);
+        setSubmitted(true);
+        return;
+      } catch (err: any) {
+        console.error(err);
+        setErrorMsg('An error occurred during update.');
+        return;
+      }
     }
 
     try {
@@ -150,8 +271,11 @@ function EventSubmitContent() {
           time: form.time,
           location: form.location,
           category: form.category,
-          price: form.price,
+          price: finalPrice,
           host: form.hostName,
+          tags: form.tags,
+          capacity: form.capacity,
+          duration: formattedDuration,
         }),
       });
 
@@ -161,7 +285,7 @@ function EventSubmitContent() {
         return;
       }
 
-      saveToLocalStorage(form);
+      saveToLocalStorage(updatedForm);
       setSubmitted(true);
     } catch (err: any) {
       console.error(err);
@@ -173,6 +297,18 @@ function EventSubmitContent() {
     margin: 0,
     borderColor: errors[field] ? '#e7b605' : undefined,
   });
+
+  if (!authChecked) {
+    return (
+      <PageLayout>
+        <div style={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, color: '#e7b605' }}>
+            Checking access...
+          </div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   if (submitted) {
     return (
@@ -315,10 +451,13 @@ function EventSubmitContent() {
             {/* Duration + Capacity */}
             <div className="grid-form" style={{ marginBottom: 20 }}>
               <div id="field-duration">
-                <label style={labelStyle}>Duration <span style={{ color: '#e7b605' }}>*</span></label>
+                <label style={labelStyle}>Duration (Hours) <span style={{ color: '#e7b605' }}>*</span></label>
                 <input
                   className="input-field"
-                  placeholder="e.g. 2 hrs, 90 mins"
+                  type="number"
+                  min="1"
+                  step="0.5"
+                  placeholder="e.g. 2"
                   value={form.duration}
                   onChange={e => handleChange('duration', e.target.value)}
                   style={fieldStyle('duration')}
@@ -421,7 +560,7 @@ function EventSubmitContent() {
                 style={{ margin: 0 }}
               />
               <div style={{ marginTop: 6, fontSize: '12px', color: '#9a9585', fontFamily: 'DM Sans, sans-serif' }}>
-                Tags help members find your event. Use 2–5 relevant keywords.
+                Tags help members find your event.
               </div>
             </div>
 

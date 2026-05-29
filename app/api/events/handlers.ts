@@ -21,16 +21,20 @@ export async function getEvents(request: Request) {
     const featured = searchParams.get("featured")
     const locationType = searchParams.get("locationType")
     const statusParam = searchParams.get("status")
+    const mySubmissions = searchParams.get("mySubmissions") === "true"
+    const adminView = searchParams.get("adminView") === "true"
 
     const cookieStore = await cookies()
     const sessionToken = cookieStore.get("session")?.value
 
     let isAdmin = false
+    let userId: string | null = null
 
-    // Check if the user logged in is an Admin
+    // Check if the user is logged in
     if (sessionToken) {
       try {
-        const decoded = await decrypt(sessionToken) as { role: string }
+        const decoded = await decrypt(sessionToken) as { role: string; userId: string }
+        userId = decoded?.userId || null
         if (decoded?.role === "ADMIN") {
           isAdmin = true
         }
@@ -41,11 +45,36 @@ export async function getEvents(request: Request) {
 
     const andConditions: any[] = []
 
-    // Security check: Only admins can view pending or rejected events.
-    // Regular visitors can ONLY see approved events.
-    if (isAdmin) {
+    // Security check: Only admins can view pending or rejected events in the review panel (adminView=true).
+    // Regular visitors can ONLY see approved events, EXCEPT that logged-in users
+    // can also see their own submitted events (even if they are PENDING or REJECTED) on their private dashboard (when mySubmissions=true).
+    if (isAdmin && adminView) {
       if (statusParam) {
         andConditions.push({ status: statusParam as any })
+      }
+    } else if (userId && mySubmissions) {
+      // Find the logged-in member to retrieve their member ID
+      const user = await prisma.user.findUnique({
+        where: { id: userId }
+      })
+      let memberId: string | null = null
+      if (user?.email) {
+        const member = await prisma.members.findUnique({
+          where: { email: user.email }
+        })
+        memberId = member?.id || null
+      }
+
+      if (memberId) {
+        // Regular user: can see APPROVED events OR their own events
+        andConditions.push({
+          OR: [
+            { status: "APPROVED" },
+            { member_id: memberId }
+          ]
+        })
+      } else {
+        andConditions.push({ status: "APPROVED" })
       }
     } else {
       andConditions.push({ status: "APPROVED" })
@@ -139,7 +168,7 @@ export async function createEvent(request: Request) {
     }
 
     const body = await request.json()
-    const { title, description, date, time, location, category, price, host } = body
+    const { title, description, date, time, location, category, price, host, tags, capacity, featured, duration } = body
 
     // Validation: Make sure they filled out all the required fields
     if (!title || !description || !date || !time || !location || !category) {
@@ -161,7 +190,15 @@ export async function createEvent(request: Request) {
         price: price || "Free",
         host: host || "Member Submission",
         member_id: memberId,
-        status: "PENDING"
+        status: "PENDING",
+        capacity: capacity ? Number(capacity) : 50,
+        featured: typeof featured === "boolean" ? featured : false,
+        duration: duration || "2 Hours",
+        tags: Array.isArray(tags)
+          ? tags
+          : typeof tags === "string"
+            ? tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+            : [],
       }
     })
 
@@ -268,8 +305,13 @@ export async function updateEvent(
       return NextResponse.json({ error: "Forbidden: You don't own this event" }, { status: 403 })
     }
 
+    // Lock check: Regular members are not allowed to edit events that are already APPROVED
+    if (userRole !== "ADMIN" && existingEvent.status === "APPROVED") {
+      return NextResponse.json({ error: "Forbidden: Approved events are locked for editing" }, { status: 400 })
+    }
+
     const body = await request.json()
-    const { title, description, date, time, location, category, price, host } = body
+    const { title, description, date, time, location, category, price, host, tags, capacity, featured, duration } = body
 
     // Update the database record with the new edits
     const updatedEvent = await prisma.events.update({
@@ -283,6 +325,16 @@ export async function updateEvent(
         category,
         price: price !== undefined ? price : undefined,
         host: host !== undefined ? host : undefined,
+        capacity: capacity !== undefined ? Number(capacity) : undefined,
+        featured: typeof featured === "boolean" ? featured : undefined,
+        duration: duration !== undefined ? duration : undefined,
+        tags: tags !== undefined
+          ? Array.isArray(tags)
+            ? tags
+            : typeof tags === "string"
+              ? tags.split(",").map((t: string) => t.trim()).filter(Boolean)
+              : []
+          : undefined,
       }
     })
 

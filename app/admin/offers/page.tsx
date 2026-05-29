@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, CheckCircle, XCircle, Star, LayoutDashboard, ClipboardList, LogOut, ChevronDown, ChevronUp, Calendar, MapPin, Tag, Percent, Gift, Zap, Building2, Trophy } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { getProfile } from '@/app/actions/profile';
+import { logout } from '@/app/actions/auth';
 import type { Offer } from '@/app/offers/page';
 
 type Tab = 'All' | 'Pending' | 'Approved' | 'Rejected';
@@ -37,13 +39,23 @@ export default function AdminOffersPage() {
   const [expandedId, setExpandedId]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (localStorage.getItem('fe_admin') !== 'true') {
-        router.push('/');
-      } else {
-        setAuthChecked(true);
+    const checkAdminAccess = async () => {
+      const res = await getProfile();
+
+      if (!res.success || !res.user) {
+        router.push('/login');
+        return;
       }
-    }
+
+      if ((res.user as any).role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
+      }
+
+      setAuthChecked(true);
+    };
+
+    checkAdminAccess();
   }, [router]);
 
   useEffect(() => {
@@ -141,7 +153,7 @@ export default function AdminOffersPage() {
           <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
         <button
-          onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/'; }}
+          onClick={async () => { localStorage.removeItem('fe_admin'); await logout(); }}
           style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}
         >
           <LogOut size={14} /> Sign Out

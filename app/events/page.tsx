@@ -92,11 +92,16 @@ export default function EventsPage() {
     time: e.time,
     duration: '2 hrs',
     location: e.location,
-    isOnline: e.location.toLowerCase().includes('online') || e.location.toLowerCase().includes('zoom'),
+    isOnline: e.location ? (
+      e.location.toLowerCase().includes('online') || 
+      e.location.toLowerCase().includes('zoom') || 
+      e.location.toLowerCase().includes('meeting link') || 
+      e.location.toLowerCase().includes('provided upon registration')
+    ) : false,
     price: e.price,
     host: e.host,
     hostBio: 'Member submitted event.',
-    capacity: 50,
+    capacity: e.capacity || 50,
     attendees: e.attendees || 0,
     featured: e.featured || false,
     status: 'approved',

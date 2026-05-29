@@ -63,11 +63,14 @@ model events {
   price       String
   host        String
   attendees   Int         @default(0)
+  capacity    Int         @default(50)
   featured    Boolean     @default(false)
   status      EventStatus @default(PENDING)
   member_id   String?     @db.Uuid
   created_At  DateTime?   @default(now()) @db.Timestamptz(6)
   updated_at  DateTime?   @db.Timestamptz(6)
+  duration    String      @default("2 hrs")
+  tags        String[]    @default([])
   members     members?    @relation(fields: [member_id], references: [id], onDelete: Cascade)
 }
 
@@ -75,4 +78,5 @@ enum EventStatus {
   PENDING
   APPROVED
   REJECTED
+  ARCHIVED
 }

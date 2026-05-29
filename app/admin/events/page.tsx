@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Search, CheckCircle, XCircle, Star, LayoutDashboard, ClipboardList, Calendar, MapPin, LogOut, ChevronDown, ChevronUp, Clock, Users, DollarSign, Mail, Tag, Trophy } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { getProfile } from '@/app/actions/profile';
+import { logout } from '@/app/actions/auth';
 
-type EventStatus = 'approved' | 'pending' | 'rejected';
+type EventStatus = 'approved' | 'pending' | 'rejected' | 'archived';
 
 type AdminEvent = {
   id: string | number;
@@ -35,6 +37,7 @@ const statusColors: Record<EventStatus, { bg: string; color: string; label: stri
   pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending' },
   approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
   rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
+  archived: { bg: 'rgba(90,86,80,0.1)', color: '#5a5650', label: 'Archived' },
 };
 
 export default function AdminEventsPage() {
@@ -47,13 +50,23 @@ export default function AdminEventsPage() {
   const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (localStorage.getItem('fe_admin') !== 'true') {
-        router.push('/');
-      } else {
-        setAuthChecked(true);
+    const checkAdminAccess = async () => {
+      const res = await getProfile();
+
+      if (!res.success || !res.user) {
+        router.push('/login');
+        return;
       }
-    }
+
+      if ((res.user as any).role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
+      }
+
+      setAuthChecked(true);
+    };
+
+    checkAdminAccess();
   }, [router]);
 
   // Persist approved events to localStorage so Content Manager can read them
@@ -65,7 +78,7 @@ export default function AdminEventsPage() {
   useEffect(() => {
     async function loadEvents() {
       try {
-        const res = await fetch('/api/events');
+        const res = await fetch('/api/events?adminView=true');
         if (res.ok) {
           const dbData = await res.json();
           const mapped: AdminEvent[] = dbData.map((e: any) => ({
@@ -76,16 +89,21 @@ export default function AdminEventsPage() {
             hostEmail: "member@foundersedge.com",
             date: e.date,
             time: e.time,
-            duration: "2 hrs",
-            capacity: 50,
+            duration: e.duration || "2 Hours",
+            capacity: e.capacity || 50,
             price: e.price,
             submittedDate: new Date(e.created_At || Date.now()).toLocaleDateString(),
             status: e.status.toLowerCase() as EventStatus,
             featured: e.featured || false,
-            isOnline: e.location.toLowerCase().includes("online"),
+            isOnline: e.location ? (
+              e.location.toLowerCase().includes('online') ||
+              e.location.toLowerCase().includes('zoom') ||
+              e.location.toLowerCase().includes('meeting link') ||
+              e.location.toLowerCase().includes('provided upon registration')
+            ) : false,
             location: e.location,
             description: e.description,
-            tags: [e.category]
+            tags: e.tags && e.tags.length > 0 ? e.tags : [e.category]
           }));
           setEvents(mapped);
           persistApproved(mapped);
@@ -189,7 +207,7 @@ export default function AdminEventsPage() {
           <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
           <span className="admin-panel-label" style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
-        <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={async () => { localStorage.removeItem('fe_admin'); await logout(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
           <LogOut size={14} /> Sign Out
         </button>
       </div>

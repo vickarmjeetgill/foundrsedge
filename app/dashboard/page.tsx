@@ -57,7 +57,7 @@ type Submission = {
   category: string;
   submittedAt: string;
   updatedAt?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'approved' | 'rejected' | 'archived';
 };
 
 type MyOffer = {
@@ -72,10 +72,11 @@ type MyOffer = {
   status: 'pending' | 'approved' | 'rejected';
 };
 
-const statusStyles: Record<'pending' | 'approved' | 'rejected', { bg: string; color: string; label: string }> = {
+const statusStyles: Record<'pending' | 'approved' | 'rejected' | 'archived', { bg: string; color: string; label: string }> = {
   pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
   approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Approved' },
   rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b', label: 'Rejected' },
+  archived: { bg: 'rgba(90,86,80,0.1)',    color: '#5a5650', label: 'Archived' },
 };
 
 const sectionTitles: Record<Section, string> = {
@@ -584,6 +585,7 @@ export default function DashboardPage() {
   const { data, error } = await supabase
     .from('members')
     .select(`
+      id,
       first_name,
       last_name,
       email,
@@ -620,6 +622,7 @@ export default function DashboardPage() {
       profileCompletion: 85,
     });
 
+    loadSubmissions(data.id);
     return;
   }
 
@@ -631,9 +634,29 @@ export default function DashboardPage() {
   }));
 };
 
-    const loadSubmissions = () => {
-      const raw = localStorage.getItem('fe_my_submissions');
-      if (raw) { try { setMySubmissions(JSON.parse(raw)); } catch {} }
+    const loadSubmissions = async (memberId?: string) => {
+      if (!memberId) {
+        const raw = localStorage.getItem('fe_my_submissions');
+        if (raw) { try { setMySubmissions(JSON.parse(raw)); } catch {} }
+        return;
+      }
+      try {
+        const res = await fetch('/api/events?mySubmissions=true');
+        if (res.ok) {
+          const allEvents = await res.json();
+          const mine = allEvents.filter((e: any) => e.member_id === memberId);
+          const mapped: Submission[] = mine.map((e: any) => ({
+            id: e.id,
+            title: e.title,
+            category: e.category,
+            submittedAt: e.created_At || new Date().toISOString(),
+            status: e.status.toLowerCase() as any,
+          }));
+          setMySubmissions(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load submissions from API:", err);
+      }
     };
 
     const loadOffers = () => {
@@ -647,15 +670,33 @@ export default function DashboardPage() {
     };
 
     loadProfile();
-    loadSubmissions();
     loadOffers();
     loadNominations();
   }, []);
 
-  function deleteSubmission(id: string) {
-    const updated = mySubmissions.filter(s => s.id !== id);
-    setMySubmissions(updated);
-    localStorage.setItem('fe_my_submissions', JSON.stringify(updated));
+  async function deleteSubmission(id: string) {
+    try {
+      const res = await fetch(`/api/events/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        const updated = mySubmissions.filter(s => s.id !== id);
+        setMySubmissions(updated);
+        const raw = localStorage.getItem('fe_my_submissions');
+        if (raw) {
+          try {
+            const list = JSON.parse(raw).filter((s: any) => s.id !== id);
+            localStorage.setItem('fe_my_submissions', JSON.stringify(list));
+          } catch {}
+        }
+      } else {
+        const data = await res.json();
+        alert(`Error deleting event: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Failed to delete event:", err);
+      alert("Failed to delete event due to network error.");
+    }
   }
 
   function deleteOffer(id: string) {

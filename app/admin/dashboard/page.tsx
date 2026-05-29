@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList, Tag } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { getProfile } from '@/app/actions/profile';
+import { logout } from '@/app/actions/auth';
 
 type Tab = 'events' | 'directory' | 'resources' | 'awards' | 'webinars' | 'supperclub';
 
@@ -18,7 +19,7 @@ const tabs: { id: Tab; label: string; icon: React.ElementType }[] = [
 ];
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
-type EventItem = { id: string | number; title: string; date: string; time: string; location: string; category: string; price: string; host: string; desc: string; featured: boolean; fromSubmission?: boolean };
+type EventItem = { id: string | number; title: string; date: string; time: string; location: string; category: string; price: string; host: string; desc: string; featured: boolean; fromSubmission?: boolean; capacity?: number; duration?: string; tags?: string[] };
 type DirectoryItem = { id: string | number; name: string; industry: string; location: string; desc: string; website: string; tags: string; featured: boolean; boosted: boolean };
 type ResourceItem = { id: string | number; title: string; category: string; url: string; tags: string; desc: string; featured: boolean };
 type AwardItem = { id: string | number; name: string; category: string; desc: string; nominationsOpen: boolean; awardDate: string; sponsor: string };
@@ -88,18 +89,30 @@ function SubmitRow({ editing, onCancel, addLabel }: { editing: boolean; onCancel
 }
 
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
-const blankEvent = { title: '', date: '', time: '', location: '', category: 'Networking', price: '', host: '', desc: '', featured: false };
+const blankEvent = { title: '', date: '', time: '', location: '', category: '', price: '', host: '', desc: '', featured: false, capacity: '', isOnline: false, duration: '', tags: '' };
 
 function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   const [items, setItems] = useState<EventItem[]>([]);
   const [form, setForm] = useState(blankEvent);
+  const [errors, setErrors] = useState<Partial<Record<keyof typeof blankEvent, string>>>({});
   const [editId, setEditId] = useState<string | number | null>(null);
-  const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+
+  const set = (k: string, v: string | boolean) => {
+    setForm(f => ({ ...f, [k]: v }));
+    if (errors[k as keyof typeof blankEvent]) {
+      setErrors(prev => ({ ...prev, [k]: undefined }));
+    }
+  };
+
+  const getFieldStyle = (key: keyof typeof blankEvent) => ({
+    ...inputStyle,
+    border: errors[key] ? '1px solid #c0392b' : '1px solid #e0e0e0',
+  });
 
   useEffect(() => {
     async function loadEvents() {
       try {
-        const res = await fetch('/api/events');
+        const res = await fetch('/api/events?adminView=true');
         if (res.ok) {
           const dbData = await res.json();
           const mapped: EventItem[] = dbData.map((e: any) => ({
@@ -114,6 +127,9 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             desc: e.description || '',
             featured: e.featured || false,
             fromSubmission: true,
+            capacity: e.capacity || 50,
+            duration: e.duration || '2 Hours',
+            tags: e.tags || [],
           }));
           setItems(mapped);
         }
@@ -124,8 +140,75 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
     loadEvents();
   }, []);
 
+  function handleOnlineToggle() {
+    setForm(prev => ({
+      ...prev,
+      isOnline: !prev.isOnline,
+      location: !prev.isOnline ? 'Meeting link provided upon registration' : '',
+    }));
+    if (errors.location) {
+      setErrors(prev => ({ ...prev, location: undefined }));
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const tempErrors: Partial<Record<keyof typeof blankEvent, string>> = {};
+
+    if (!form.title.trim()) tempErrors.title = 'Please enter a valid title.';
+    if (!form.category.trim()) tempErrors.category = 'Please select a valid category.';
+    if (!form.date) tempErrors.date = 'Please enter a valid date.';
+    if (!form.time) tempErrors.time = 'Please enter a valid time.';
+    if (!form.isOnline && !form.location.trim()) tempErrors.location = 'Please enter a valid location.';
+
+    // Capacity validation
+    if (!form.capacity.trim() || isNaN(Number(form.capacity)) || Number(form.capacity) <= 0) {
+      tempErrors.capacity = 'Please enter a valid capacity.';
+    }
+
+    // Description validation
+    if (!form.desc || !form.desc.trim()) {
+      tempErrors.desc = 'Please enter a valid description.';
+    }
+
+    // Duration validation
+    const durationTrimmed = String(form.duration).trim();
+    if (!durationTrimmed || isNaN(Number(durationTrimmed)) || Number(durationTrimmed) <= 0) {
+      tempErrors.duration = 'Please enter a valid duration.';
+    }
+
+    // Price validation and auto-formatting
+    let finalPrice = form.price.trim();
+    if (finalPrice) {
+      const isKnownText = ['free', 'members only', 'members-only', 'invite only', 'invite-only', 'tbd'].includes(finalPrice.toLowerCase());
+      const isNumericPrice = /^\$?\d+(?:\.\d{2})?$/.test(finalPrice);
+      if (!isKnownText && !isNumericPrice) {
+        tempErrors.price = 'Please enter "Free", "Members Only", or a valid dollar amount (e.g. "$45" or "45").';
+      } else if (/^\d+(?:\.\d{2})?$/.test(finalPrice)) {
+        finalPrice = `$${finalPrice}`;
+      }
+    } else {
+      finalPrice = 'Free';
+    }
+
+    if (Object.keys(tempErrors).length > 0) {
+      setErrors(tempErrors);
+      // Scroll to the first error input field
+      const firstErrKey = Object.keys(tempErrors)[0];
+      const el = document.getElementsByName(firstErrKey)[0];
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    setErrors({});
+
+    const formattedDuration = `${durationTrimmed} Hours`;
+
+    // Parse tags to array
+    const tagsArray = form.tags
+      ? form.tags.split(',').map((t: string) => t.trim()).filter(Boolean)
+      : [];
+
     try {
       if (editId !== null) {
         const res = await fetch(`/api/events/${editId}`, {
@@ -138,13 +221,25 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             time: form.time,
             location: form.location,
             category: form.category,
-            price: form.price,
+            price: finalPrice,
             host: form.host,
-            featured: form.featured
+            featured: form.featured,
+            capacity: Number(form.capacity),
+            duration: formattedDuration,
+            tags: tagsArray,
           })
         });
         if (res.ok) {
-          setItems(items.map(i => i.id === editId ? { ...form, id: editId, fromSubmission: i.fromSubmission } : i));
+          const updatedItem: EventItem = {
+            ...form,
+            price: finalPrice,
+            id: editId,
+            fromSubmission: items.find(i => i.id === editId)?.fromSubmission || false,
+            capacity: Number(form.capacity),
+            duration: formattedDuration,
+            tags: tagsArray
+          };
+          setItems(items.map(i => i.id === editId ? updatedItem : i));
           onSuccess('Event updated successfully in database.');
           setEditId(null);
           setForm(blankEvent);
@@ -163,9 +258,12 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             time: form.time,
             location: form.location,
             category: form.category,
-            price: form.price,
+            price: finalPrice,
             host: form.host,
-            featured: form.featured
+            featured: form.featured,
+            capacity: Number(form.capacity),
+            duration: formattedDuration,
+            tags: tagsArray,
           })
         });
         if (res.ok) {
@@ -183,6 +281,9 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             desc: created.description || '',
             featured: created.featured || false,
             fromSubmission: false,
+            capacity: created.capacity || 50,
+            duration: created.duration || '2 Hours',
+            tags: created.tags || [],
           }]);
           onSuccess('Event added successfully to database.');
           setForm(blankEvent);
@@ -198,7 +299,28 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   }
 
   function handleEdit(item: EventItem) {
-    setForm({ title: item.title, date: item.date, time: item.time, location: item.location, category: item.category, price: item.price, host: item.host, desc: item.desc, featured: item.featured });
+    const isOnline = item.location ? (
+      item.location.toLowerCase().includes('online') ||
+      item.location.toLowerCase().includes('zoom') ||
+      item.location.toLowerCase().includes('meeting link') ||
+      item.location.toLowerCase().includes('provided upon registration')
+    ) : false;
+
+    setForm({
+      title: item.title,
+      date: item.date,
+      time: item.time,
+      location: item.location,
+      category: item.category,
+      price: item.price,
+      host: item.host,
+      desc: item.desc,
+      featured: item.featured,
+      capacity: item.capacity ? String(item.capacity) : '50',
+      isOnline: isOnline,
+      duration: item.duration ? String(parseFloat(item.duration) || 2) : '2',
+      tags: Array.isArray(item.tags) ? item.tags.join(', ') : '',
+    });
     setEditId(item.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -226,19 +348,182 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   return (
     <>
       <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
-        <Field label="Event Title"><input required style={inputStyle} value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Founders Networking Night" /></Field>
-        <Field label="Category"><select style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)}>{['Networking', 'Workshop', 'Webinar', 'Supper Club', 'Other'].map(c => <option key={c}>{c}</option>)}</select></Field>
-        <Field label="Date"><input required style={inputStyle} type="date" value={form.date} onChange={e => set('date', e.target.value)} /></Field>
-        <Field label="Time"><input required style={inputStyle} type="time" value={form.time} onChange={e => set('time', e.target.value)} /></Field>
-        <Field label="Location"><input required style={inputStyle} value={form.location} onChange={e => set('location', e.target.value)} placeholder="e.g. The Commons, Calgary" /></Field>
-        <Field label="Price"><input style={inputStyle} value={form.price} onChange={e => set('price', e.target.value)} placeholder="e.g. Free / $50 / Members Only" /></Field>
-        <Field label="Host / Organizer"><input style={inputStyle} value={form.host} onChange={e => set('host', e.target.value)} placeholder="e.g. Founders Edge" /></Field>
-        <Field label="Featured"><label style={checkboxRowStyle}><input type="checkbox" checked={form.featured} onChange={e => set('featured', e.target.checked)} style={{ width: 16, height: 16, accentColor: '#e7b605' }} /> Mark as featured event</label></Field>
-        <div style={{ gridColumn: '1 / -1' }}><Field label="Description"><textarea style={textareaStyle} value={form.desc} onChange={e => set('desc', e.target.value)} placeholder="Describe the event..." /></Field></div>
-        <SubmitRow editing={editId !== null} onCancel={() => { setEditId(null); setForm(blankEvent); }} addLabel="Add Event" />
+        <Field label="Event Title">
+          <input
+            name="title"
+            required
+            style={getFieldStyle('title')}
+            value={form.title}
+            onChange={e => set('title', e.target.value)}
+            placeholder="e.g. Founders Networking Night"
+          />
+          <FormError msg={errors.title} />
+        </Field>
+
+        <Field label="Category">
+          <select
+            name="category"
+            style={getFieldStyle('category')}
+            value={form.category}
+            onChange={e => set('category', e.target.value)}
+          >
+            <option value="">-- Select Category --</option>
+            {['Networking', 'Workshop', 'Webinar', 'Supper Club', 'Other'].map(c => <option key={c}>{c}</option>)}
+          </select>
+          <FormError msg={errors.category} />
+        </Field>
+
+        <Field label="Date">
+          <input
+            name="date"
+            required
+            style={getFieldStyle('date')}
+            type="date"
+            value={form.date}
+            onChange={e => set('date', e.target.value)}
+          />
+          <FormError msg={errors.date} />
+        </Field>
+
+        <Field label="Time">
+          <input
+            name="time"
+            required
+            style={getFieldStyle('time')}
+            type="time"
+            value={form.time}
+            onChange={e => set('time', e.target.value)}
+          />
+          <FormError msg={errors.time} />
+        </Field>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <Field label="Location">
+            <input
+              name="location"
+              required={!form.isOnline}
+              style={{ ...getFieldStyle('location'), opacity: form.isOnline ? 0.6 : 1 }}
+              disabled={form.isOnline}
+              value={form.location}
+              onChange={e => set('location', e.target.value)}
+              placeholder={form.isOnline ? 'Meeting link provided upon registration' : 'e.g. The Commons, Calgary'}
+            />
+            <FormError msg={errors.location} />
+          </Field>
+          <label style={checkboxRowStyle}>
+            <input
+              type="checkbox"
+              checked={form.isOnline}
+              onChange={handleOnlineToggle}
+              style={{ width: 16, height: 16, accentColor: '#e7b605', cursor: 'pointer' }}
+            />
+            This is an online event
+          </label>
+        </div>
+
+        <Field label="Price">
+          <input
+            name="price"
+            style={getFieldStyle('price')}
+            value={form.price}
+            onChange={e => set('price', e.target.value)}
+            placeholder="e.g. Free / $50 / Members Only"
+          />
+          <FormError msg={errors.price} />
+        </Field>
+
+        <Field label="Host / Organizer">
+          <input
+            name="host"
+            style={getFieldStyle('host')}
+            value={form.host}
+            onChange={e => set('host', e.target.value)}
+            placeholder="e.g. Founders Edge"
+          />
+          <FormError msg={errors.host} />
+        </Field>
+
+        <Field label="Capacity">
+          <input
+            name="capacity"
+            style={getFieldStyle('capacity')}
+            type="number"
+            min="1"
+            value={form.capacity}
+            onChange={e => set('capacity', e.target.value)}
+            placeholder="e.g. 50"
+          />
+          <FormError msg={errors.capacity} />
+        </Field>
+
+        <Field label="Duration (Hours)">
+          <input
+            name="duration"
+            type="number"
+            min="1"
+            step="0.5"
+            required
+            style={getFieldStyle('duration')}
+            value={form.duration}
+            onChange={e => set('duration', e.target.value)}
+            placeholder="e.g. 2"
+          />
+          <FormError msg={errors.duration} />
+        </Field>
+
+        <Field label="Tags (comma-separated)">
+          <input
+            name="tags"
+            style={getFieldStyle('tags')}
+            value={form.tags}
+            onChange={e => set('tags', e.target.value)}
+            placeholder="e.g. YYC, Tech, Networking"
+          />
+          <FormError msg={errors.tags} />
+        </Field>
+
+        <Field label="Featured">
+          <label style={checkboxRowStyle}>
+            <input
+              type="checkbox"
+              checked={form.featured}
+              onChange={e => set('featured', e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: '#e7b605' }}
+            />
+            Mark as featured event
+          </label>
+        </Field>
+
+        <div style={{ gridColumn: '1 / -1' }}>
+          <Field label="Description">
+            <textarea
+              name="desc"
+              required
+              style={{
+                ...textareaStyle,
+                border: errors.desc ? '1px solid #c0392b' : '1px solid #e0e0e0',
+              }}
+              value={form.desc}
+              onChange={e => set('desc', e.target.value)}
+              placeholder="Describe the event..."
+            />
+            <FormError msg={errors.desc} />
+          </Field>
+        </div>
+
+        <SubmitRow editing={editId !== null} onCancel={() => { setEditId(null); setForm(blankEvent); setErrors({}); }} addLabel="Add Event" />
       </form>
       <ItemTable items={items} columns={['Title', 'Date', 'Category', 'Source', 'Featured']} getRow={i => [i.title, i.date || '—', i.category, i.fromSubmission ? '📋 Submission' : '✏️ Manual', i.featured ? 'Yes' : 'No']} onEdit={handleEdit} onDelete={handleDelete} />
     </>
+  );
+}
+
+function FormError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return (
+    <div style={{ color: '#c0392b', fontSize: '12px', fontWeight: 600, marginTop: 4, fontFamily: 'DM Sans, sans-serif' }}>
+      {msg}
+    </div>
   );
 }
 
@@ -550,33 +835,29 @@ function ItemTable<T extends { id: string | number }>({ items, columns, getRow, 
 export default function AdminDashboard() {
   const router = useRouter();
   useEffect(() => {
-  const checkAdminAccess = async () => {
-    const res = await getProfile();
+    const checkAdminAccess = async () => {
+      const res = await getProfile();
 
-    if (!res.success || !res.user) {
-      router.push('/login');
-      return;
-    }
+      if (!res.success || !res.user) {
+        router.push('/login');
+        return;
+      }
 
-    if ((res.user as any).role !== 'ADMIN') {
-      router.push('/dashboard');
-    }
-  };
+      if ((res.user as any).role !== 'ADMIN') {
+        router.push('/dashboard');
+      }
+    };
 
-  checkAdminAccess();
-}, [router]);
+    checkAdminAccess();
+  }, [router]);
   const [activeTab, setActiveTab] = useState<Tab>('events');
   const [successMsg, setSuccessMsg] = useState('');
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && localStorage.getItem('fe_admin') !== 'true') {
-      router.replace('/');
-    }
-  }, [router]);
 
-  function handleLogout() {
+
+  async function handleLogout() {
     localStorage.removeItem('fe_admin');
-    router.push('/');
+    await logout();
   }
 
   function showSuccess(msg: string) {

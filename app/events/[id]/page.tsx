@@ -32,6 +32,24 @@ const categoryColors: Record<string, string> = {
   Other: '#5a5650',
 };
 
+function formatTime(timeStr: string) {
+  if (!timeStr) return "";
+  if (timeStr.toLowerCase().includes("am") || timeStr.toLowerCase().includes("pm")) {
+    return timeStr;
+  }
+  const parts = timeStr.split(":");
+  if (parts.length >= 2) {
+    const hours = parseInt(parts[0], 10);
+    const minutes = parts[1];
+    if (!isNaN(hours)) {
+      const ampm = hours >= 12 ? "PM" : "AM";
+      const displayHours = hours % 12 === 0 ? 12 : hours % 12;
+      return `${displayHours}:${minutes} ${ampm}`;
+    }
+  }
+  return timeStr;
+}
+
 export default function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
@@ -110,6 +128,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const descriptionText = event.description || event.desc || "";
   const descParagraphs = descriptionText.split('\n\n').filter(Boolean);
 
+  const isOnlineEvent = event.isOnline || 
+    event.location?.toLowerCase().includes("online") || 
+    event.location?.toLowerCase().includes("zoom") ||
+    event.location?.toLowerCase().includes("meeting link") ||
+    event.location?.toLowerCase().includes("provided upon registration");
+
+  const eventTags = event.tags && event.tags.length > 0
+    ? event.tags
+    : [
+        event.category,
+        isOnlineEvent ? "Online" : "In-Person",
+        event.price === "Free" || event.price?.toLowerCase() === "free" ? "Free" : "Paid"
+      ].filter(Boolean);
+
 
   return (
     <PageLayout>
@@ -138,7 +170,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                 <Star size={10} fill="#e7b605" style={{ marginRight: 3 }} />Featured
               </span>
             )}
-            {event.isOnline && (
+            {isOnlineEvent && (
               <span className="tag" style={{ background: 'rgba(26,111,196,0.2)', color: '#60aaff' }}>
                 <Wifi size={10} style={{ marginRight: 3 }} />Online
               </span>
@@ -153,7 +185,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           <div style={{ display: 'flex', gap: 32, flexWrap: 'wrap' }}>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
               <Calendar size={16} style={{ color: '#e7b605' }} />
-              {event.date} at {event.time}
+              {event.date} at {formatTime(event.time)}
             </span>
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#ccc', fontFamily: 'DM Sans, sans-serif', fontSize: '14px' }}>
               <Clock size={16} style={{ color: '#e7b605' }} />
@@ -209,7 +241,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
               <div>
                 <div className="section-label" style={{ marginBottom: 16 }}>Tags</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {(event.tags || []).map((tag: string) => (
+                  {eventTags.map((tag: string) => (
                     <span key={tag} className="tag">{tag}</span>
                   ))}
                 </div>
@@ -289,16 +321,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                     <Calendar size={16} style={{ color: '#e7b605', marginTop: 2, flexShrink: 0 }} />
                     <div>
                       <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#2a2820' }}>{event.date}</div>
-                      <div style={{ fontSize: '12px', color: '#9a9585', fontFamily: 'DM Sans, sans-serif' }}>{event.time} · {event.duration}</div>
+                      <div style={{ fontSize: '12px', color: '#9a9585', fontFamily: 'DM Sans, sans-serif' }}>{formatTime(event.time)} · {event.duration}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                     <MapPin size={16} style={{ color: '#e7b605', marginTop: 2, flexShrink: 0 }} />
                     <div>
                       <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#2a2820' }}>
-                        {event.isOnline ? 'Online Event' : event.location}
+                        {isOnlineEvent ? 'Online Event' : event.location}
                       </div>
-                      {event.isOnline && (
+                      {isOnlineEvent && (
                         <div style={{ fontSize: '12px', color: '#9a9585', fontFamily: 'DM Sans, sans-serif' }}>Link sent upon registration</div>
                       )}
                     </div>
