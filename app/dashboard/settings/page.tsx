@@ -8,12 +8,12 @@ import { logout } from '@/app/actions/auth';
 import { getProfile, updateProfile } from '@/app/actions/profile';
 
 const defaultMember = {
-  name: 'Jordan Smith',
-  business: 'NorthTech Solutions',
-  stage: 'Grow',
-  industry: 'Technology',
-  joined: 'Jan 2025',
-  profileCompletion: 85,
+  name: '',
+  business: '',
+  stage: '',
+  industry: '',
+  joined: '',
+  profileCompletion: 0,
 };
 
 const navItems = [
@@ -31,59 +31,78 @@ export default function SettingsPage() {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  
+
   // UI States
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load Member & User DB data
   useEffect(() => {
     const loadData = async () => {
-      // 1. Fetch Supabase Member Data (to keep Sidebar consistent)
-      const { data, error } = await supabase
-        .from('businesses')
-        .select(`
-          business_name,
-          business_type,
-          created_at,
-          members (
-            first_name,
-            last_name,
-            stage,
-            industry
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!error && data) {
-        const memberData = Array.isArray(data.members) ? data.members[0] : data.members;
-        setMember({
-          name: `${memberData?.first_name ?? ''} ${memberData?.last_name ?? ''}`.trim() || 'Member',
-          business: data.business_name ?? 'Business',
-          stage: memberData?.stage ?? 'N/A',
-          industry: memberData?.industry ?? 'N/A',
-          joined: data.created_at
-            ? new Date(data.created_at).toLocaleDateString('en-US', {
-                month: 'short',
-                year: 'numeric',
-              })
-            : 'N/A',
-          profileCompletion: 90,
-        });
-      }
-
-      // 2. Fetch Prisma User Profile
+      // 1. Fetch Prisma User Profile first
       const profileRes = await getProfile();
+      let userEmail = '';
+      let userName = 'Member';
+
       if (profileRes.success && profileRes.user) {
         setUserProfile(profileRes.user);
         setName(profileRes.user.name || '');
         setEmail(profileRes.user.email || '');
+        userEmail = profileRes.user.email || '';
+        userName = profileRes.user.name || 'Member';
+      }
+
+      // 2. Fetch Supabase Member Data matching user email (to keep Sidebar consistent)
+      if (userEmail) {
+        const { data, error } = await supabase
+          .from('members')
+          .select(`
+            id,
+            first_name,
+            last_name,
+            email,
+            stage,
+            industry,
+            created_at,
+            businesses (
+              business_name,
+              business_type
+            )
+          `)
+          .eq('email', userEmail)
+          .maybeSingle();
+
+        if (!error && data) {
+          const businessData = Array.isArray(data.businesses)
+            ? data.businesses[0]
+            : data.businesses;
+
+          setMember({
+            name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
+            business: businessData?.business_name ?? 'Founders Edge Member',
+            stage: data.stage ?? 'N/A',
+            industry: data.industry ?? businessData?.business_type ?? 'Member',
+            joined: data.created_at
+              ? new Date(data.created_at).toLocaleDateString('en-US', {
+                month: 'short',
+                year: 'numeric',
+              })
+              : 'N/A',
+            profileCompletion: 90,
+          });
+        } else {
+          setMember(prev => ({
+            ...prev,
+            name: userName,
+            business: 'Founders Edge Member',
+            stage: 'N/A',
+            industry: 'Member',
+          }));
+        }
       }
     };
 
@@ -104,6 +123,10 @@ export default function SettingsPage() {
 
     if (res.success && res.user) {
       setUserProfile(res.user);
+      setMember(prev => ({
+        ...prev,
+        name: res.user.name || name
+      }));
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       // Clear message after 3 seconds
       setTimeout(() => setMessage(null), 3000);
@@ -195,15 +218,15 @@ export default function SettingsPage() {
   const renderSidebarAvatar = () => {
     if (userProfile?.avatarUrl) {
       return (
-        <img 
-          src={userProfile.avatarUrl} 
-          alt={member.name} 
-          style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }} 
+        <img
+          src={userProfile.avatarUrl}
+          alt={member.name}
+          style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }}
         />
       );
     }
     return (
-      <div style={{ width: 44, height: 44, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
+      <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
         {member.name.charAt(0)}
       </div>
     );
@@ -213,15 +236,15 @@ export default function SettingsPage() {
   const renderTopbarAvatar = () => {
     if (userProfile?.avatarUrl) {
       return (
-        <img 
-          src={userProfile.avatarUrl} 
-          alt={member.name} 
-          style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '0%', border: '1px solid #e2e0d8', cursor: 'pointer' }} 
+        <img
+          src={userProfile.avatarUrl}
+          alt={member.name}
+          style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '50%', border: '1px solid #e2e0d8', cursor: 'pointer' }}
         />
       );
     }
     return (
-      <div style={{ width: 40, height: 40, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', cursor: 'pointer' }}>
+      <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', cursor: 'pointer' }}>
         {member.name.charAt(0)}
       </div>
     );
@@ -231,15 +254,15 @@ export default function SettingsPage() {
   const renderSettingsAvatar = () => {
     if (userProfile?.avatarUrl) {
       return (
-        <img 
-          src={userProfile.avatarUrl} 
-          alt="Avatar Preview" 
-          style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+        <img
+          src={userProfile.avatarUrl}
+          alt="Avatar Preview"
+          style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
         />
       );
     }
     return (
-      <div style={{ width: '100%', height: '100%', background: '#111', color: '#e7b605', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: '#111', color: '#e7b605', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         <User size={36} />
         <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.05em', color: '#666' }}>NO PHOTO</span>
       </div>
@@ -265,7 +288,7 @@ export default function SettingsPage() {
               <div style={{ fontSize: '12px', color: '#888' }}>{member.business}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginLeft: '56px' }}>
             <span style={{ padding: '3px 10px', background: '#9b7011', color: '#fff', fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{member.stage}</span>
             <span style={{ padding: '3px 10px', background: '#1a1a1a', color: '#888', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em' }}>{member.industry}</span>
           </div>
@@ -300,29 +323,29 @@ export default function SettingsPage() {
         </nav>
 
         <div style={{ padding: '16px 0', borderTop: '1px solid #1a1a1a' }}>
-          <Link href="/dashboard/settings" style={{ 
-            display: 'flex', alignItems: 'center', gap: 12, 
-            padding: '12px 24px', textDecoration: 'none', 
+          <Link href="/dashboard/settings" style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            padding: '12px 24px', textDecoration: 'none',
             background: 'rgba(231,182,5,0.1)',
             borderLeft: '3px solid #e7b605',
-            color: '#e7b605', 
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px' 
+            color: '#e7b605',
+            fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px'
           }}>
             <Settings size={16} /> Settings
           </Link>
-          <button 
+          <button
             onClick={async () => {
               await logout();
             }}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 12, 
-              padding: '12px 24px', 
-              textDecoration: 'none', 
-              color: '#666', 
-              fontFamily: 'DM Sans, sans-serif', 
-              fontWeight: 600, 
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '12px 24px',
+              textDecoration: 'none',
+              color: '#666',
+              fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 600,
               fontSize: '14px',
               background: 'none',
               border: 'none',
@@ -357,12 +380,12 @@ export default function SettingsPage() {
         <div style={{ padding: '40px', maxWidth: '800px' }}>
           {/* Notification Banner */}
           {message && (
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 12, 
-              padding: '16px 20px', 
-              background: message.type === 'success' ? '#eefdf4' : '#fdf2f2', 
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              padding: '16px 20px',
+              background: message.type === 'success' ? '#eefdf4' : '#fdf2f2',
               border: `1px solid ${message.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
               borderLeft: `4px solid ${message.type === 'success' ? '#22c55e' : '#ef4444'}`,
               color: message.type === 'success' ? '#166534' : '#991b1b',
@@ -383,16 +406,17 @@ export default function SettingsPage() {
 
             {/* Avatar Uploader UI */}
             <div style={{ display: 'flex', gap: 32, alignItems: 'center', borderBottom: '1px solid #f0efe9', paddingBottom: 32, marginBottom: 32 }}>
-              <div 
+              <div
                 className="avatar-container"
-                style={{ 
-                  position: 'relative', 
-                  width: 120, 
-                  height: 120, 
+                style={{
+                  position: 'relative',
+                  width: 120,
+                  height: 120,
                   border: `2px dashed ${dragActive ? '#e7b605' : '#e2e0d8'}`,
                   background: dragActive ? 'rgba(231, 182, 5, 0.05)' : '#fff',
                   cursor: isUploading ? 'not-allowed' : 'pointer',
                   overflow: 'hidden',
+                  borderRadius: '50%',
                   transition: 'all 0.2s',
                 }}
                 onClick={!isUploading ? handleAvatarClick : undefined}
@@ -418,7 +442,7 @@ export default function SettingsPage() {
                   transition: 'opacity 0.2s',
                   pointerEvents: 'none'
                 }}
-                className="hover-mask"
+                  className="hover-mask"
                 >
                   <Upload size={20} style={{ color: '#e7b605' }} />
                   <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.05em' }}>CHANGE</span>
@@ -445,9 +469,9 @@ export default function SettingsPage() {
 
               <div>
                 <div style={{ display: 'flex', gap: 12, marginBottom: 8 }}>
-                  <button 
-                    type="button" 
-                    onClick={handleAvatarClick} 
+                  <button
+                    type="button"
+                    onClick={handleAvatarClick}
                     disabled={isUploading}
                     style={{
                       background: '#000',
@@ -472,12 +496,12 @@ export default function SettingsPage() {
                   Drag & drop your photo or click to browse.<br />
                   Supports JPG, PNG, or GIF. Max size 5MB.
                 </div>
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleFileChange} 
-                  accept="image/*" 
-                  style={{ display: 'none' }} 
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  style={{ display: 'none' }}
                 />
               </div>
             </div>
@@ -537,12 +561,12 @@ export default function SettingsPage() {
                 <label style={{ display: 'block', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#888', marginBottom: 8 }}>
                   Membership Role
                 </label>
-                <div style={{ 
-                  display: 'inline-flex', 
-                  alignItems: 'center', 
-                  gap: 8, 
-                  padding: '8px 16px', 
-                  background: '#f4f3ed', 
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 16px',
+                  background: '#f4f3ed',
                   border: '1px solid #e2e0d8',
                   fontSize: '12px',
                   fontWeight: 700,
@@ -598,7 +622,8 @@ export default function SettingsPage() {
       </main>
 
       {/* Global CSS for Tailwind-like keyframes */}
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @keyframes spin {
           from {
             transform: rotate(0deg);

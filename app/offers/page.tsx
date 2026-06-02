@@ -48,9 +48,9 @@ const typeMap: Record<string, Offer['type'] | 'all'> = {
 
 const typeColors: Record<Offer['type'], { bg: string; color: string; icon: React.ReactNode; label: string }> = {
   percentage: { bg: 'rgba(231,182,5,0.12)', color: '#9b7011', icon: <Percent size={11} />, label: '% Off' },
-  bogo:       { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', icon: <Gift size={11} />,    label: 'BOGO' },
-  fixed:      { bg: 'rgba(26,111,196,0.1)', color: '#1a6fc4', icon: <Tag size={11} />,     label: 'Fixed' },
-  custom:     { bg: 'rgba(90,58,8,0.08)',   color: '#5a3a08', icon: <Zap size={11} />,     label: 'Custom' },
+  bogo: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', icon: <Gift size={11} />, label: 'BOGO' },
+  fixed: { bg: 'rgba(26,111,196,0.1)', color: '#1a6fc4', icon: <Tag size={11} />, label: 'Fixed' },
+  custom: { bg: 'rgba(90,58,8,0.08)', color: '#5a3a08', icon: <Zap size={11} />, label: 'Custom' },
 };
 
 function isExpired(dateStr: string) {
@@ -59,13 +59,13 @@ function isExpired(dateStr: string) {
 }
 
 export default function OffersPage() {
-  const [search, setSearch]           = useState('');
-  const [category, setCategory]       = useState('All Categories');
-  const [typeFilter, setTypeFilter]   = useState('All Types');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All Categories');
+  const [typeFilter, setTypeFilter] = useState('All Types');
   const [locationFilter, setLocationFilter] = useState('All Locations');
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [hideExpired, setHideExpired] = useState(true);
-  const [offers, setOffers]           = useState<Offer[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
     // Load approved offers from localStorage (set by admin moderation)
@@ -91,13 +91,13 @@ export default function OffersPage() {
         o.businessName.toLowerCase().includes(q) ||
         o.description.toLowerCase().includes(q) ||
         o.category.toLowerCase().includes(q);
-      const matchCat      = category === 'All Categories' || o.category === category;
-      const matchType     = selectedType === 'all' || o.type === selectedType;
+      const matchCat = category === 'All Categories' || o.category === category;
+      const matchType = selectedType === 'all' || o.type === selectedType;
       const matchLocation =
         locationFilter === 'All Locations' ||
         o.location.toLowerCase().includes(locationFilter.toLowerCase());
       const matchFeatured = !featuredOnly || o.featured;
-      const matchExpiry   = !hideExpired || !isExpired(o.expiryDate);
+      const matchExpiry = !hideExpired || !isExpired(o.expiryDate);
       return matchSearch && matchCat && matchType && matchLocation && matchFeatured && matchExpiry;
     })
     .sort((a, b) => {

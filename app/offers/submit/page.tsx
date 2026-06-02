@@ -58,9 +58,9 @@ const offerCategories = [
 
 const typeOptions: { value: OfferType; label: string; icon: React.ReactNode; hint: string; example: string }[] = [
   { value: 'percentage', icon: <Percent size={18} />, label: 'Percentage Off', hint: 'e.g. 10% off your first consultation', example: '10% off' },
-  { value: 'bogo',       icon: <Gift size={18} />,    label: 'Buy One Get One', hint: 'e.g. Buy one session, get one free', example: 'Buy 1 Get 1' },
-  { value: 'fixed',      icon: <Tag size={18} />,     label: 'Fixed Amount Off', hint: 'e.g. $50 off your first order', example: '$50 off' },
-  { value: 'custom',     icon: <Zap size={18} />,     label: 'Custom Offer', hint: 'Write your own offer headline', example: 'Free audit' },
+  { value: 'bogo', icon: <Gift size={18} />, label: 'Buy One Get One', hint: 'e.g. Buy one session, get one free', example: 'Buy 1 Get 1' },
+  { value: 'fixed', icon: <Tag size={18} />, label: 'Fixed Amount Off', hint: 'e.g. $50 off your first order', example: '$50 off' },
+  { value: 'custom', icon: <Zap size={18} />, label: 'Custom Offer', hint: 'Write your own offer headline', example: 'Free audit' },
 ];
 
 function buildDiscount(form: FormData): string {
@@ -91,8 +91,8 @@ function OfferSubmitContent() {
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
 
-  const [form, setForm]           = useState<FormData>(initialForm);
-  const [errors, setErrors]       = useState<FormErrors>({});
+  const [form, setForm] = useState<FormData>(initialForm);
+  const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [offerCount, setOfferCount] = useState(0);
@@ -119,20 +119,20 @@ function OfferSubmitContent() {
     else if (type === 'custom') customDiscount = found.discount;
 
     setForm({
-      businessName:         found.businessName,
-      title:                found.title,
+      businessName: found.businessName,
+      title: found.title,
       type,
       discountValue,
-      discountUnit:         '% off',
+      discountUnit: '% off',
       customDiscount,
-      description:          found.description,
-      category:             found.category,
-      location:             found.location || '',
-      expiryDate:           found.expiryDate || '',
+      description: found.description,
+      category: found.category,
+      location: found.location || '',
+      expiryDate: found.expiryDate || '',
       foundersEdgeDiscount: found.foundersEdgeDiscount || '',
-      eventsPageUrl:        found.eventsPageUrl || '',
-      howToRedeem:          found.howToRedeem || '',
-      agreeGuidelines:      true,
+      eventsPageUrl: found.eventsPageUrl || '',
+      howToRedeem: found.howToRedeem || '',
+      agreeGuidelines: true,
     });
   }, [editId]);
 
@@ -150,21 +150,21 @@ function OfferSubmitContent() {
       localStorage.setItem('fe_my_offers', JSON.stringify(updated));
     } else {
       const newOffer: Offer = {
-        id:                   `offer_${Date.now()}`,
-        businessName:         formData.businessName,
-        title:                formData.title,
-        type:                 formData.type,
+        id: `offer_${Date.now()}`,
+        businessName: formData.businessName,
+        title: formData.title,
+        type: formData.type,
         discount,
-        description:          formData.description,
-        category:             formData.category,
-        location:             formData.location,
-        expiryDate:           formData.expiryDate,
+        description: formData.description,
+        category: formData.category,
+        location: formData.location,
+        expiryDate: formData.expiryDate,
         foundersEdgeDiscount: formData.foundersEdgeDiscount || undefined,
-        eventsPageUrl:        formData.eventsPageUrl || undefined,
-        howToRedeem:          formData.howToRedeem,
-        status:               'pending',
-        featured:             false,
-        submittedAt:          new Date().toISOString(),
+        eventsPageUrl: formData.eventsPageUrl || undefined,
+        howToRedeem: formData.howToRedeem,
+        status: 'pending',
+        featured: false,
+        submittedAt: new Date().toISOString(),
       };
       localStorage.setItem('fe_my_offers', JSON.stringify([...existing, newOffer]));
     }
@@ -180,8 +180,22 @@ function OfferSubmitContent() {
     const errs = validateForm(form);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
-    saveToLocalStorage(form, editId || undefined);
-    setSubmitted(true);
+    const response = await fetch('/api/offers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(form),
+    });
+
+    if (response.ok) {
+      saveToLocalStorage(form, editId || undefined);
+      setSubmitted(true);
+    } else {
+      const result = await response.json().catch(() => ({}));
+      alert(result.error || 'Failed to create offer');
+    }
+
   }
 
   // ── Success screen ──────────────────────────────────────────────

@@ -40,15 +40,15 @@ const recommendations = {
 
 // Nav items: `section` = stay on dashboard and switch view; `href` = navigate away
 const navItems: { icon: React.ElementType; label: string; section?: Section; href?: string }[] = [
-  { icon: TrendingUp, label: 'Dashboard',  section: 'dashboard' },
-  { icon: Calendar,   label: 'Events',     section: 'events' },
-  { icon: Tag,        label: 'Offers',     section: 'offers' },
-  { icon: Trophy,     label: 'Awards',     section: 'awards' },
-  { icon: Building2,  label: 'Business',   section: 'business' },
-  { icon: UserCircle, label: 'Owners',     section: 'owners' },
-  { icon: Users,      label: 'My Matches', href: '/dashboard/matches' },
-  { icon: BookOpen,   label: 'Resources',  href: '/resources' },
-  { icon: Star,       label: 'Supper Club', href: '/supper-club' },
+  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
+  { icon: Calendar, label: 'Events', section: 'events' },
+  { icon: Tag, label: 'Offers', section: 'offers' },
+  { icon: Trophy, label: 'Awards', section: 'awards' },
+  { icon: Building2, label: 'Business', section: 'business' },
+  { icon: UserCircle, label: 'Owners', section: 'owners' },
+  { icon: Users, label: 'My Matches', href: '/dashboard/matches' },
+  { icon: BookOpen, label: 'Resources', href: '/resources' },
+  { icon: Star, label: 'Supper Club', href: '/supper-club' },
 ];
 
 type Submission = {
@@ -73,19 +73,19 @@ type MyOffer = {
 };
 
 const statusStyles: Record<'pending' | 'approved' | 'rejected' | 'archived', { bg: string; color: string; label: string }> = {
-  pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
-  approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Approved' },
-  rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b', label: 'Rejected' },
-  archived: { bg: 'rgba(90,86,80,0.1)',    color: '#5a5650', label: 'Archived' },
+  pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
+  approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
+  rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
+  archived: { bg: 'rgba(90,86,80,0.1)', color: '#5a5650', label: 'Archived' },
 };
 
 const sectionTitles: Record<Section, string> = {
   dashboard: 'Dashboard',
-  events:    'My Events',
-  offers:    'My Offers',
-  awards:    'My Awards',
-  business:  'Business Profiles',
-  owners:    'Owner Network',
+  events: 'My Events',
+  offers: 'My Offers',
+  awards: 'My Awards',
+  business: 'Business Profiles',
+  owners: 'Owner Network',
 };
 
 // ── Shared label style ───────────────────────────────────────────
@@ -120,10 +120,10 @@ const bizIndustries = [
 
 // ── Business Section ─────────────────────────────────────────────
 function BusinessSection({ memberBusiness }: { memberBusiness: string }) {
-  const [myProfile, setMyProfile]     = useState<BusinessProfile | null>(null);
+  const [myProfile, setMyProfile] = useState<BusinessProfile | null>(null);
   const [allProfiles, setAllProfiles] = useState<BusinessProfile[]>([]);
-  const [editMode, setEditMode]       = useState(false);
-  const [form, setForm]               = useState({
+  const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState({
     name: '', industry: 'Technology', location: 'Calgary, AB',
     description: '', website: '', lookingFor: '', tags: '',
   });
@@ -135,13 +135,13 @@ function BusinessSection({ memberBusiness }: { memberBusiness: string }) {
         const p: BusinessProfile = JSON.parse(myRaw);
         setMyProfile(p);
         setForm({ name: p.name, industry: p.industry, location: p.location, description: p.description, website: p.website || '', lookingFor: p.lookingFor || '', tags: p.tags.join(', ') });
-      } catch {}
+      } catch { }
     } else {
       setEditMode(true);
       setForm(f => ({ ...f, name: memberBusiness !== 'Founders Edge Member' ? memberBusiness : '' }));
     }
     const allRaw = localStorage.getItem('fe_biz_profiles');
-    if (allRaw) { try { setAllProfiles(JSON.parse(allRaw)); } catch {} }
+    if (allRaw) { try { setAllProfiles(JSON.parse(allRaw)); } catch { } }
   }, [memberBusiness]);
 
   function saveProfile() {
@@ -321,12 +321,12 @@ function BusinessSection({ memberBusiness }: { memberBusiness: string }) {
 
 // ── Owners Section ───────────────────────────────────────────────
 function OwnersSection({ memberName, memberBusiness }: { memberName: string; memberBusiness: string }) {
-  const [myProfile, setMyProfile]       = useState<OwnerProfile | null>(null);
-  const [posts, setPosts]               = useState<OwnerPost[]>([]);
-  const [editMode, setEditMode]         = useState(false);
+  const [myProfile, setMyProfile] = useState<OwnerProfile | null>(null);
+  const [posts, setPosts] = useState<OwnerPost[]>([]);
+  const [editMode, setEditMode] = useState(false);
   const [showPostForm, setShowPostForm] = useState(false);
-  const [form, setForm]                 = useState({ name: '', title: '', business: '', bio: '', lookingFor: '', tags: '' });
-  const [postForm, setPostForm]         = useState({ type: 'seeking' as 'seeking' | 'offering', headline: '', details: '', tags: '' });
+  const [form, setForm] = useState({ name: '', title: '', business: '', bio: '', lookingFor: '', tags: '' });
+  const [postForm, setPostForm] = useState({ type: 'seeking' as 'seeking' | 'offering', headline: '', details: '', tags: '' });
 
   useEffect(() => {
     const myRaw = localStorage.getItem('fe_my_owner_profile');
@@ -335,17 +335,17 @@ function OwnersSection({ memberName, memberBusiness }: { memberName: string; mem
         const p: OwnerProfile = JSON.parse(myRaw);
         setMyProfile(p);
         setForm({ name: p.name, title: p.title, business: p.business, bio: p.bio, lookingFor: p.lookingFor || '', tags: p.tags.join(', ') });
-      } catch {}
+      } catch { }
     } else {
       setEditMode(true);
       setForm(f => ({
         ...f,
-        name:     memberName !== 'Loading User' ? memberName : '',
+        name: memberName !== 'Loading User' ? memberName : '',
         business: memberBusiness !== 'Founders Edge Member' ? memberBusiness : '',
       }));
     }
     const postsRaw = localStorage.getItem('fe_owner_posts');
-    if (postsRaw) { try { setPosts(JSON.parse(postsRaw)); } catch {} }
+    if (postsRaw) { try { setPosts(JSON.parse(postsRaw)); } catch { } }
   }, [memberName, memberBusiness]);
 
   function saveProfile() {
@@ -366,7 +366,7 @@ function OwnersSection({ memberName, memberBusiness }: { memberName: string; mem
     const post: OwnerPost = {
       id: `post_${Date.now()}`,
       ownerName: myProfile?.name || memberName,
-      business:  myProfile?.business || memberBusiness,
+      business: myProfile?.business || memberBusiness,
       type: postForm.type, headline: postForm.headline, details: postForm.details,
       tags: postForm.tags.split(',').map(t => t.trim()).filter(Boolean),
       postedAt: new Date().toISOString(), isOwn: true,
@@ -561,30 +561,30 @@ function OwnersSection({ memberName, memberBusiness }: { memberName: string; mem
 
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
-  const [member, setMember]               = useState(defaultMember);
-  const [userProfile, setUserProfile]     = useState<any>(null);
+  const [member, setMember] = useState(defaultMember);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
-  const [myOffers, setMyOffers]           = useState<MyOffer[]>([]);
+  const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
   const [myNominations, setMyNominations] = useState<Nomination[]>([]);
 
   useEffect(() => {
     const loadProfile = async () => {
-  const res = await getProfile();
+      const res = await getProfile();
 
-  if (!res.success || !res.user) {
-    return;
-  }
+      if (!res.success || !res.user) {
+        return;
+      }
 
-  const loggedInUser = res.user as any;
+      const loggedInUser = res.user as any;
 
-  setUserProfile(loggedInUser);
+      setUserProfile(loggedInUser);
 
-  const userEmail = loggedInUser.email || '';
-  const userName = loggedInUser.name || 'Member';
+      const userEmail = loggedInUser.email || '';
+      const userName = loggedInUser.name || 'Member';
 
-  const { data, error } = await supabase
-    .from('members')
-    .select(`
+      const { data, error } = await supabase
+        .from('members')
+        .select(`
       id,
       first_name,
       last_name,
@@ -597,47 +597,47 @@ export default function DashboardPage() {
         business_type
       )
     `)
-    .eq('email', userEmail)
-    .maybeSingle();
+        .eq('email', userEmail)
+        .maybeSingle();
 
-  if (error) {
-    console.error('Member/business lookup error:', error.message);
-  }
+      if (error) {
+        console.error('Member/business lookup error:', error.message);
+      }
 
-  if (data) {
-    const businessData = Array.isArray(data.businesses)
-      ? data.businesses[0]
-      : data.businesses;
+      if (data) {
+        const businessData = Array.isArray(data.businesses)
+          ? data.businesses[0]
+          : data.businesses;
 
-    setMember({
-      name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
-      business: businessData?.business_name ?? 'Founders Edge Member',
-      industry: data.industry ?? businessData?.business_type ?? 'Member',
-      joined: data.created_at
-        ? new Date(data.created_at).toLocaleDateString('en-US', {
-            month: 'short',
-            year: 'numeric',
-          })
-        : 'May 2026',
-      profileCompletion: 85,
-    });
+        setMember({
+          name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
+          business: businessData?.business_name ?? 'Founders Edge Member',
+          industry: data.industry ?? businessData?.business_type ?? 'Member',
+          joined: data.created_at
+            ? new Date(data.created_at).toLocaleDateString('en-US', {
+              month: 'short',
+              year: 'numeric',
+            })
+            : 'May 2026',
+          profileCompletion: 85,
+        });
 
-    loadSubmissions(data.id);
-    return;
-  }
+        loadSubmissions(data.id);
+        return;
+      }
 
-  setMember(prev => ({
-    ...prev,
-    name: userName,
-    business: 'Founders Edge Member',
-    industry: 'Member',
-  }));
-};
+      setMember(prev => ({
+        ...prev,
+        name: userName,
+        business: 'Founders Edge Member',
+        industry: 'Member',
+      }));
+    };
 
     const loadSubmissions = async (memberId?: string) => {
       if (!memberId) {
         const raw = localStorage.getItem('fe_my_submissions');
-        if (raw) { try { setMySubmissions(JSON.parse(raw)); } catch {} }
+        if (raw) { try { setMySubmissions(JSON.parse(raw)); } catch { } }
         return;
       }
       try {
@@ -661,12 +661,12 @@ export default function DashboardPage() {
 
     const loadOffers = () => {
       const raw = localStorage.getItem('fe_my_offers');
-      if (raw) { try { setMyOffers(JSON.parse(raw)); } catch {} }
+      if (raw) { try { setMyOffers(JSON.parse(raw)); } catch { } }
     };
 
     const loadNominations = () => {
       const raw = localStorage.getItem('fe_my_nominations');
-      if (raw) { try { setMyNominations(JSON.parse(raw)); } catch {} }
+      if (raw) { try { setMyNominations(JSON.parse(raw)); } catch { } }
     };
 
     loadProfile();
@@ -687,7 +687,7 @@ export default function DashboardPage() {
           try {
             const list = JSON.parse(raw).filter((s: any) => s.id !== id);
             localStorage.setItem('fe_my_submissions', JSON.stringify(list));
-          } catch {}
+          } catch { }
         }
       } else {
         const data = await res.json();
@@ -709,7 +709,7 @@ export default function DashboardPage() {
         const adminOffers = JSON.parse(adminRaw).filter((o: MyOffer) => o.id !== id);
         localStorage.setItem('fe_all_submitted_offers', JSON.stringify(adminOffers));
         localStorage.setItem('fe_approved_offers', JSON.stringify(adminOffers.filter((o: MyOffer) => o.status === 'approved')));
-      } catch {}
+      } catch { }
     }
   }
 
@@ -722,7 +722,7 @@ export default function DashboardPage() {
       try {
         const adminNoms = JSON.parse(adminRaw).filter((n: Nomination) => n.id !== id);
         localStorage.setItem('fe_all_nominations', JSON.stringify(adminNoms));
-      } catch {}
+      } catch { }
     }
   }
 
@@ -955,10 +955,10 @@ export default function DashboardPage() {
   // ── Section: Awards ───────────────────────────────────────────
   function AwardsSection() {
     const nomStatusStyles: Record<Nomination['status'], { bg: string; color: string; label: string }> = {
-      pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
-      approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Approved' },
-      rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b', label: 'Rejected' },
-      winner:   { bg: 'rgba(231,182,5,0.12)', color: '#9b7011', label: '🏆 Winner!' },
+      pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
+      approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
+      rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
+      winner: { bg: 'rgba(231,182,5,0.12)', color: '#9b7011', label: '🏆 Winner!' },
     };
     return (
       <div style={{ padding: '40px' }}>
@@ -1053,10 +1053,10 @@ export default function DashboardPage() {
         {/* Stats row */}
         <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
           {[
-            { label: 'Profile Views',    value: '142', change: '+18% this month', icon: User },
-            { label: 'Connections Made', value: '8',   change: '3 new this month', icon: Users },
-            { label: 'Events Attended',  value: '5',   change: '2 upcoming',       icon: Calendar },
-            { label: 'Resources Saved',  value: '12',  change: 'Updated weekly',   icon: BookOpen },
+            { label: 'Profile Views', value: '142', change: '+18% this month', icon: User },
+            { label: 'Connections Made', value: '8', change: '3 new this month', icon: Users },
+            { label: 'Events Attended', value: '5', change: '2 upcoming', icon: Calendar },
+            { label: 'Resources Saved', value: '12', change: 'Updated weekly', icon: BookOpen },
           ].map(stat => (
             <div key={stat.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -1199,9 +1199,9 @@ export default function DashboardPage() {
         <div style={{ padding: '24px', borderBottom: '1px solid #1a1a1a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             {userProfile?.avatarUrl ? (
-              <img src={userProfile.avatarUrl} alt={member.name} style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }} />
+              <img src={userProfile.avatarUrl} alt={member.name} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />
             ) : (
-              <div style={{ width: 44, height: 44, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
                 {member.name.charAt(0)}
               </div>
             )}
@@ -1210,7 +1210,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: '12px', color: '#888' }}>{member.business}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginLeft: '56px' }}>
             <span style={{ padding: '3px 10px', background: '#1a1a1a', color: '#888', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em' }}>{member.industry}</span>
           </div>
           <div style={{ marginTop: 16 }}>
@@ -1269,11 +1269,11 @@ export default function DashboardPage() {
 
         {/* Section content */}
         {activeSection === 'dashboard' && <DashboardSection />}
-        {activeSection === 'events'    && <EventsSection />}
-        {activeSection === 'offers'    && <OffersSection />}
-        {activeSection === 'awards'    && <AwardsSection />}
-        {activeSection === 'business'  && <BusinessSection memberBusiness={member.business} />}
-        {activeSection === 'owners'    && <OwnersSection memberName={member.name} memberBusiness={member.business} />}
+        {activeSection === 'events' && <EventsSection />}
+        {activeSection === 'offers' && <OffersSection />}
+        {activeSection === 'awards' && <AwardsSection />}
+        {activeSection === 'business' && <BusinessSection memberBusiness={member.business} />}
+        {activeSection === 'owners' && <OwnersSection memberName={member.name} memberBusiness={member.business} />}
       </main>
     </div>
   );

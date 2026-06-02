@@ -32,6 +32,8 @@ export async function getProfile() {
     }
 }
 
+import { supabase } from '@/lib/supabase';
+
 export async function updateProfile(formData: FormData) {
     try {
         const cookieStore = await cookies();
@@ -42,7 +44,7 @@ export async function updateProfile(formData: FormData) {
             return { error: 'Unauthorized' };
         }
         
-        const name = formData.get('name') as string;
+        const name = (formData.get('name') as string) || '';
         
         const user = await prisma.user.update({
             where: { id: decodedSession.userId as string },
@@ -55,6 +57,25 @@ export async function updateProfile(formData: FormData) {
                 avatarUrl: true,
             }
         });
+
+        // Sync with PostgreSQL members table using Prisma directly (foolproof, bypasses RLS)
+        if (user.email) {
+            const nameParts = name.trim().split(/\s+/);
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || '';
+
+            try {
+                await prisma.members.update({
+                    where: { email: user.email },
+                    data: {
+                        first_name: firstName,
+                        last_name: lastName
+                    }
+                });
+            } catch (dbError: any) {
+                console.error('Failed to sync name with members database table:', dbError.message || dbError);
+            }
+        }
         
         return { success: true, user };
     } catch (error: any) {
