@@ -2,18 +2,20 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  Bell, Settings, Calendar, Building2, Users, BookOpen, Trophy, Star,
+  Settings, Calendar, Building2, Users, BookOpen, Trophy, Star,
   ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User,
   Plus, Pencil, Trash2, Tag, ExternalLink, CheckCircle,
-  UserCircle, Globe, MapPin,
+  UserCircle, Globe, MapPin, Rss,
 } from 'lucide-react';
+import FeedSection from './FeedSection';
+import NotificationBell from './NotificationBell';
 import type { Nomination } from '@/app/awards/nominate/page';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import { logout } from '@/app/actions/auth';
 import { getProfile } from '@/app/actions/profile';
 
-type Section = 'dashboard' | 'events' | 'offers' | 'awards' | 'business' | 'owners';
+type Section = 'dashboard' | 'feed' | 'events' | 'offers' | 'awards' | 'business' | 'owners';
 
 const defaultMember = {
   name: 'Loading User',
@@ -41,6 +43,7 @@ const recommendations = {
 // Nav items: `section` = stay on dashboard and switch view; `href` = navigate away
 const navItems: { icon: React.ElementType; label: string; section?: Section; href?: string }[] = [
   { icon: TrendingUp, label: 'Dashboard',  section: 'dashboard' },
+  { icon: Rss,        label: 'Feed',       section: 'feed' },
   { icon: Calendar,   label: 'Events',     section: 'events' },
   { icon: Tag,        label: 'Offers',     section: 'offers' },
   { icon: Trophy,     label: 'Awards',     section: 'awards' },
@@ -81,6 +84,7 @@ const statusStyles: Record<'pending' | 'approved' | 'rejected' | 'archived', { b
 
 const sectionTitles: Record<Section, string> = {
   dashboard: 'Dashboard',
+  feed:      'Community Feed',
   events:    'My Events',
   offers:    'My Offers',
   awards:    'My Awards',
@@ -1253,10 +1257,7 @@ export default function DashboardPage() {
             <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button style={{ width: 40, height: 40, background: '#f9f9f7', border: '1px solid #e2e0d8', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', position: 'relative' }}>
-              <Bell size={18} style={{ color: '#5a5650' }} />
-              <div style={{ position: 'absolute', top: 8, right: 8, width: 8, height: 8, background: '#e7b605', borderRadius: '50%' }} />
-            </button>
+            <NotificationBell />
             {userProfile?.avatarUrl ? (
               <img src={userProfile.avatarUrl} alt={member.name} style={{ width: 40, height: 40, objectFit: 'cover', border: '1px solid #e2e0d8', cursor: 'pointer' }} />
             ) : (
@@ -1269,6 +1270,7 @@ export default function DashboardPage() {
 
         {/* Section content */}
         {activeSection === 'dashboard' && <DashboardSection />}
+        {activeSection === 'feed'      && <FeedSection memberName={member.name} memberBusiness={member.business} />}
         {activeSection === 'events'    && <EventsSection />}
         {activeSection === 'offers'    && <OffersSection />}
         {activeSection === 'awards'    && <AwardsSection />}

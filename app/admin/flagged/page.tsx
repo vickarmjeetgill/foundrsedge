@@ -1,0 +1,358 @@
+'use client';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  Flag, LayoutDashboard, ClipboardList, Tag, Trophy,
+  LogOut, CheckCircle, XCircle, Eye, Trash2, AlertTriangle,
+} from 'lucide-react';
+import Logo from '@/components/Logo';
+
+type FlagStatus = 'pending' | 'resolved' | 'dismissed';
+
+type FlagReport = {
+  id: string;
+  contentType: 'post' | 'comment';
+  contentId: string;
+  contentPreview: string;
+  authorName: string;
+  reportedBy: string;
+  reason: string;
+  details?: string;
+  status: FlagStatus;
+  reportedAt: string;
+};
+
+type TabFilter = 'All' | 'Pending' | 'Resolved' | 'Dismissed';
+const tabs: TabFilter[] = ['All', 'Pending', 'Resolved', 'Dismissed'];
+
+const statusStyles: Record<FlagStatus, { bg: string; color: string; label: string }> = {
+  pending:   { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
+  resolved:  { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Resolved' },
+  dismissed: { bg: 'rgba(90,86,80,0.1)',   color: '#5a5650', label: 'Dismissed' },
+};
+
+const navLinkBase: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 8,
+  padding: '14px 20px', fontFamily: 'DM Sans, sans-serif',
+  fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em',
+  textTransform: 'uppercase', textDecoration: 'none',
+  color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s',
+};
+
+export default function AdminFlaggedPage() {
+  const router = useRouter();
+  const [reports, setReports] = useState<FlagReport[]>([]);
+  const [tab, setTab]         = useState<TabFilter>('All');
+  const [authChecked, setAuthChecked] = useState(false);
+  const [toast, setToast]     = useState<string | null>(null);
+  const [preview, setPreview] = useState<FlagReport | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (localStorage.getItem('fe_admin') !== 'true') {
+        router.push('/');
+      } else {
+        setAuthChecked(true);
+        const raw = localStorage.getItem('fe_flag_reports');
+        if (raw) { try { setReports(JSON.parse(raw)); } catch {} }
+      }
+    }
+  }, [router]);
+
+  function showToast(msg: string) {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2500);
+  }
+
+  function persist(updated: FlagReport[]) {
+    localStorage.setItem('fe_flag_reports', JSON.stringify(updated));
+    setReports(updated);
+  }
+
+  function resolveReport(id: string) {
+    const updated = reports.map(r => r.id === id ? { ...r, status: 'resolved' as const } : r);
+    persist(updated);
+    // Also mark the post as removed from the feed
+    const report = reports.find(r => r.id === id);
+    if (report?.contentType === 'post') {
+      const posts = JSON.parse(localStorage.getItem('fe_feed_posts') || '[]');
+      const updated = posts.map((p: any) => p.id === report.contentId ? { ...p, removed: true } : p);
+      localStorage.setItem('fe_feed_posts', JSON.stringify(updated));
+    }
+    if (report?.contentType === 'comment') {
+      const raw = localStorage.getItem('fe_post_comments');
+      if (raw) {
+        const all = JSON.parse(raw).map((c: any) => c.id === report.contentId ? { ...c, removed: true } : c);
+        localStorage.setItem('fe_post_comments', JSON.stringify(all));
+      }
+    }
+    showToast('Content removed and report resolved ✓');
+    setPreview(null);
+  }
+
+  function dismissReport(id: string) {
+    const updated = reports.map(r => r.id === id ? { ...r, status: 'dismissed' as const } : r);
+    persist(updated);
+    showToast('Report dismissed — no action taken.');
+    setPreview(null);
+  }
+
+  function deleteReport(id: string) {
+    persist(reports.filter(r => r.id !== id));
+    showToast('Report deleted.');
+    setPreview(null);
+  }
+
+  const filtered = reports.filter(r =>
+    tab === 'All' || r.status === tab.toLowerCase()
+  );
+
+  const stats = {
+    total:     reports.length,
+    pending:   reports.filter(r => r.status === 'pending').length,
+    resolved:  reports.filter(r => r.status === 'resolved').length,
+    dismissed: reports.filter(r => r.status === 'dismissed').length,
+  };
+
+  if (!authChecked) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ color: '#e7b605', fontFamily: 'DM Sans, sans-serif', fontWeight: 700 }}>Checking access...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#f9f9f7', fontFamily: 'DM Sans, sans-serif' }}>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#000', color: '#fff', padding: '14px 24px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', zIndex: 500, boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }}>
+          {toast}
+        </div>
+      )}
+
+      {/* Content preview modal */}
+      {preview && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 400, padding: 20 }}>
+          <div style={{ background: '#fff', padding: '36px', maxWidth: 560, width: '100%' }}>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#c0392b', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>
+              {preview.contentType} — {preview.reason}
+            </div>
+            <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px', marginBottom: 16 }}>Review Flag Report</h3>
+            <div style={{ background: '#f9f9f7', border: '1px solid #e2e0d8', borderLeft: '4px solid #c0392b', padding: '16px', marginBottom: 20 }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 8 }}>Content Preview</div>
+              <p style={{ fontFamily: 'Noto Serif, serif', color: '#2a2820', fontSize: '14px', lineHeight: 1.6 }}>"{preview.contentPreview}"</p>
+              <div style={{ marginTop: 10, fontSize: '12px', color: '#9a9585' }}>
+                by <strong>{preview.authorName}</strong> · reported by <strong>{preview.reportedBy}</strong>
+              </div>
+            </div>
+            {preview.details && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Reporter Notes</div>
+                <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.6 }}>{preview.details}</p>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {preview.status === 'pending' && (
+                <>
+                  <button onClick={() => resolveReport(preview.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 22px', background: '#c0392b', border: 'none', color: '#fff', fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '13px', cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    <Trash2 size={14} /> Remove Content
+                  </button>
+                  <button onClick={() => dismissReport(preview.id)} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 22px', background: 'transparent', border: '1px solid #e2e0d8', color: '#5a5650', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+                    <CheckCircle size={14} /> Dismiss Report
+                  </button>
+                </>
+              )}
+              <button onClick={() => setPreview(null)} style={{ padding: '12px 20px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', cursor: 'pointer', color: '#9a9585', marginLeft: 'auto' }}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Top Bar */}
+      <div style={{ background: '#000', borderBottom: '1px solid #1a1a1a', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}><Logo size="sm" /></Link>
+          <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
+        </div>
+        <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
+          <LogOut size={14} /> Sign Out
+        </button>
+      </div>
+
+      {/* Secondary Nav */}
+      <div style={{ background: '#0a0a0a', borderBottom: '1px solid #1a1a1a' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', display: 'flex', gap: 0 }}>
+          <Link href="/admin/dashboard" style={navLinkBase}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <LayoutDashboard size={14} /> Content Manager
+          </Link>
+          <Link href="/admin/events" style={navLinkBase}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <ClipboardList size={14} /> Review Events
+          </Link>
+          <Link href="/admin/offers" style={navLinkBase}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Tag size={14} /> Review Offers
+          </Link>
+          <Link href="/admin/awards" style={navLinkBase}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Trophy size={14} /> Review Awards
+          </Link>
+          <Link href="/admin/flagged" style={{ ...navLinkBase, color: '#e7b605', borderBottom: '2px solid #e7b605' }}>
+            <Flag size={14} /> Flagged Content
+            {stats.pending > 0 && (
+              <span style={{ marginLeft: 4, background: '#c0392b', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '1px 6px' }}>
+                {stats.pending}
+              </span>
+            )}
+          </Link>
+        </div>
+      </div>
+
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '40px' }}>
+
+        {/* Stats */}
+        <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
+          {[
+            { label: 'Total Reports',  value: stats.total,     color: '#2a2820' },
+            { label: 'Pending Review', value: stats.pending,   color: '#e67e22' },
+            { label: 'Resolved',       value: stats.resolved,  color: '#27ae60' },
+            { label: 'Dismissed',      value: stats.dismissed, color: '#5a5650' },
+          ].map(s => (
+            <div key={s.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px 28px' }}>
+              <div style={{ fontSize: '32px', fontWeight: 900, color: s.color, marginBottom: 4 }}>{s.value}</div>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs + Table */}
+        <div style={{ background: '#fff', border: '1px solid #e2e0d8' }}>
+          {/* Tab bar */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #e2e0d8', padding: '0 24px' }}>
+            {tabs.map(t => (
+              <button key={t} onClick={() => setTab(t)} style={{ padding: '14px 20px', background: 'none', border: 'none', borderBottom: tab === t ? '2px solid #e7b605' : '2px solid transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: tab === t ? '#2a2820' : '#9a9585', cursor: 'pointer', marginBottom: -1, transition: 'all 0.15s' }}>
+                {t}
+                <span style={{ marginLeft: 6, fontSize: '11px', opacity: 0.7 }}>
+                  ({t === 'All' ? stats.total : t === 'Pending' ? stats.pending : t === 'Resolved' ? stats.resolved : stats.dismissed})
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Table */}
+          {filtered.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '80px 40px' }}>
+              <Flag size={36} style={{ color: '#e2e0d8', marginBottom: 16 }} />
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9a9585', marginBottom: 8 }}>
+                No {tab !== 'All' ? tab.toLowerCase() : ''} reports
+              </div>
+              <div style={{ fontFamily: 'Noto Serif, serif', color: '#b8b4ae', fontSize: '14px' }}>
+                Flagged content from members will appear here.
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* Table header */}
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr 130px 130px 130px 140px', gap: 0, padding: '12px 24px', background: '#f9f9f7', borderBottom: '1px solid #e2e0d8' }}>
+                {['Type', 'Content Preview', 'Author', 'Reported By', 'Reason', 'Actions'].map(h => (
+                  <div key={h} style={{ fontSize: '11px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</div>
+                ))}
+              </div>
+
+              {filtered.map(report => {
+                const s = statusStyles[report.status];
+                return (
+                  <div key={report.id} style={{ display: 'grid', gridTemplateColumns: '80px 1fr 130px 130px 130px 140px', gap: 0, padding: '16px 24px', borderBottom: '1px solid #f0efe9', alignItems: 'center' }}>
+                    {/* Type */}
+                    <div>
+                      <span style={{ padding: '3px 10px', background: report.contentType === 'post' ? 'rgba(231,182,5,0.1)' : '#f0efe9', color: report.contentType === 'post' ? '#9b7011' : '#5a5650', fontSize: '10px', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {report.contentType}
+                      </span>
+                    </div>
+
+                    {/* Preview */}
+                    <div style={{ paddingRight: 16 }}>
+                      <div style={{ fontFamily: 'Noto Serif, serif', fontSize: '13px', color: '#2a2820', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                        "{report.contentPreview}"
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#9a9585', marginTop: 4 }}>
+                        {new Date(report.reportedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </div>
+                    </div>
+
+                    {/* Author */}
+                    <div style={{ fontSize: '13px', color: '#2a2820', fontWeight: 600 }}>{report.authorName}</div>
+
+                    {/* Reported by */}
+                    <div style={{ fontSize: '13px', color: '#9a9585' }}>{report.reportedBy}</div>
+
+                    {/* Reason */}
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#5a5650', fontWeight: 600, marginBottom: 4 }}>{report.reason}</div>
+                      <span style={{ padding: '2px 8px', background: s.bg, color: s.color, fontSize: '10px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                        {s.label}
+                      </span>
+                    </div>
+
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button onClick={() => setPreview(report)} title="View details" style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '6px 12px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', color: '#5a5650', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#9b7011'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#5a5650'; }}>
+                        <Eye size={12} /> Review
+                      </button>
+                      {report.status === 'pending' && (
+                        <>
+                          <button onClick={() => resolveReport(report.id)} title="Remove content" style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 10px', border: '1px solid #e2e0d8', background: 'transparent', cursor: 'pointer', color: '#c0392b', transition: 'all 0.15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.background = 'rgba(192,57,43,0.06)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.background = 'transparent'; }}>
+                            <XCircle size={14} />
+                          </button>
+                          <button onClick={() => dismissReport(report.id)} title="Dismiss report" style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 10px', border: '1px solid #e2e0d8', background: 'transparent', cursor: 'pointer', color: '#27ae60', transition: 'all 0.15s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#27ae60'; e.currentTarget.style.background = 'rgba(39,174,96,0.06)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.background = 'transparent'; }}>
+                            <CheckCircle size={14} />
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => { if (confirm('Delete this report record?')) deleteReport(report.id); }} title="Delete record" style={{ display: 'inline-flex', alignItems: 'center', padding: '6px 10px', border: '1px solid #e2e0d8', background: 'transparent', cursor: 'pointer', color: '#9a9585', transition: 'all 0.15s' }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Legend */}
+        <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+          {[
+            { icon: <Eye size={14} />, label: 'Review — open full report and act' },
+            { icon: <XCircle size={14} style={{ color: '#c0392b' }} />, label: 'Remove — delete content from feed' },
+            { icon: <CheckCircle size={14} style={{ color: '#27ae60' }} />, label: 'Dismiss — no violation found' },
+            { icon: <Trash2 size={14} />, label: 'Delete — remove report record' },
+          ].map(({ icon, label }) => (
+            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '12px', color: '#9a9585', fontFamily: 'DM Sans, sans-serif' }}>
+              {icon} {label}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
