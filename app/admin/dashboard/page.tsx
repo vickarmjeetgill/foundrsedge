@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList, Tag } from 'lucide-react';
+import { Calendar, Building2, BookOpen, Trophy, Video, Users, Star, LogOut, Plus, CheckCircle, X, Pencil, Trash2, ChevronDown, ChevronUp, LayoutDashboard, ClipboardList, Tag, Flag } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { getProfile } from '@/app/actions/profile';
 import { logout } from '@/app/actions/auth';
@@ -834,6 +834,26 @@ function ItemTable<T extends { id: string | number }>({ items, columns, getRow, 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const router = useRouter();
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  useEffect(() => {
+  const checkAdminAccess = async () => {
+    const res = await getProfile();
+
+    if (!res.success || !res.user) {
+      router.push('/login');
+      return;
+    }
+
+    if ((res.user as any).role !== 'ADMIN') {
+      router.push('/dashboard');
+      return;
+    }
+
+    setCheckingAccess(false);
+  };
+
+  checkAdminAccess();
+}, [router]);
   useEffect(() => {
     const checkAdminAccess = async () => {
       const res = await getProfile();
@@ -869,6 +889,23 @@ export default function AdminDashboard() {
 
   const activeTabData = tabs.find(t => t.id === activeTab)!;
 
+  if (checkingAccess) {
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#000',
+      color: '#e7b605',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'DM Sans, sans-serif',
+      fontWeight: 800,
+      fontSize: '18px'
+    }}>
+      Checking admin access...
+    </div>
+  );
+}
   return (
     <div style={{ minHeight: '100vh', background: '#f9f9f7', color: '#111' }}>
       {/* Top Bar */}
@@ -905,6 +942,11 @@ export default function AdminDashboard() {
             onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
             onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
             <Trophy size={14} /> Review Awards
+          </Link>
+          <Link href="/admin/flagged" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 20px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', letterSpacing: '0.05em', textTransform: 'uppercase', textDecoration: 'none', color: '#888', borderBottom: '2px solid transparent', transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Flag size={14} /> Flagged Content
           </Link>
         </div>
       </div>
