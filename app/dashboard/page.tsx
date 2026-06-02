@@ -42,8 +42,6 @@ const recommendations = {
 
 // Nav items: `section` = stay on dashboard and switch view; `href` = navigate away
 const navItems: { icon: React.ElementType; label: string; section?: Section; href?: string }[] = [
-<<<<<<< HEAD
-=======
   { icon: TrendingUp, label: 'Dashboard',  section: 'dashboard' },
   { icon: Rss,        label: 'Feed',       section: 'feed' },
   { icon: Calendar,   label: 'Events',     section: 'events' },
@@ -54,16 +52,6 @@ const navItems: { icon: React.ElementType; label: string; section?: Section; hre
   { icon: Users,      label: 'My Matches', href: '/dashboard/matches' },
   { icon: BookOpen,   label: 'Resources',  href: '/resources' },
   { icon: Star,       label: 'Supper Club', href: '/supper-club' },
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
-  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
-  { icon: Calendar, label: 'Events', section: 'events' },
-  { icon: Tag, label: 'Offers', section: 'offers' },
-  { icon: Trophy, label: 'Awards', section: 'awards' },
-  { icon: Building2, label: 'Business', section: 'business' },
-  { icon: UserCircle, label: 'Owners', section: 'owners' },
-  { icon: Users, label: 'My Matches', href: '/dashboard/matches' },
-  { icon: BookOpen, label: 'Resources', href: '/resources' },
-  { icon: Star, label: 'Supper Club', href: '/supper-club' },
 ];
 
 type Submission = {
@@ -86,41 +74,21 @@ type MyOffer = {
   updatedAt?: string;
   status: 'pending' | 'approved' | 'rejected';
 };
-
 const statusStyles: Record<'pending' | 'approved' | 'rejected' | 'archived', { bg: string; color: string; label: string }> = {
-<<<<<<< HEAD
-  pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
-  approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
-  rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
-  archived: { bg: 'rgba(90,86,80,0.1)', color: '#5a5650', label: 'Archived' },
-=======
   pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
   approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Approved' },
   rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b', label: 'Rejected' },
   archived: { bg: 'rgba(90,86,80,0.1)',    color: '#5a5650', label: 'Archived' },
-const statusStyles: Record<'pending' | 'approved' | 'rejected', { bg: string; color: string; label: string }> = {
-  pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
-  approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
-  rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
 };
 
 const sectionTitles: Record<Section, string> = {
   dashboard: 'Dashboard',
-<<<<<<< HEAD
-=======
   feed:      'Community Feed',
   events:    'My Events',
   offers:    'My Offers',
   awards:    'My Awards',
   business:  'Business Profiles',
   owners:    'Owner Network',
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
-  events: 'My Events',
-  offers: 'My Offers',
-  awards: 'My Awards',
-  business: 'Business Profiles',
-  owners: 'Owner Network',
 };
 
 // ── Shared label style ───────────────────────────────────────────
@@ -598,8 +566,6 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<Section>('dashboard');
   const [member, setMember] = useState(defaultMember);
   const [userProfile, setUserProfile] = useState<any>(null);
-<<<<<<< HEAD
-=======
   const isAdmin = userProfile?.role === 'ADMIN';
   const visibleNavItems = isAdmin
     ? [
@@ -607,7 +573,6 @@ export default function DashboardPage() {
       { icon: Settings, label: 'Admin Panel', href: '/admin/dashboard' },
     ]
     : navItems;
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
   const [myNominations, setMyNominations] = useState<Nomination[]>([]);
@@ -627,23 +592,6 @@ export default function DashboardPage() {
       const userEmail = loggedInUser.email || '';
       const userName = loggedInUser.name || 'Member';
 
-<<<<<<< HEAD
-      const { data, error } = await supabase
-        .from('members')
-        .select(`
-      id,
-      first_name,
-      last_name,
-      email,
-      stage,
-      industry,
-      created_at,
-      businesses (
-        business_name,
-        business_type
-      )
-    `)
-=======
        const { data, error } = await supabase
         .from('members')
         .select(`
@@ -659,7 +607,6 @@ export default function DashboardPage() {
             business_type
           )
         `)
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
         .eq('email', userEmail)
         .maybeSingle();
 
@@ -678,24 +625,14 @@ export default function DashboardPage() {
           industry: data.industry ?? businessData?.business_type ?? 'Member',
           joined: data.created_at
             ? new Date(data.created_at).toLocaleDateString('en-US', {
-<<<<<<< HEAD
-              month: 'short',
-              year: 'numeric',
-            })
-=======
                 month: 'short',
                 year: 'numeric',
               })
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
             : 'May 2026',
           profileCompletion: 85,
         });
 
-<<<<<<< HEAD
-        loadSubmissions(data.id);
-=======
         await loadSubmissions(data.id);
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
         return;
       }
 
@@ -705,25 +642,18 @@ export default function DashboardPage() {
         business: 'Founders Edge Member',
         industry: 'Member',
       }));
-<<<<<<< HEAD
-=======
 
       await loadSubmissions();
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
     };
 
     const loadSubmissions = async (memberId?: string) => {
       if (!memberId) {
         const raw = localStorage.getItem('fe_my_submissions');
-<<<<<<< HEAD
-        if (raw) { try { setMySubmissions(JSON.parse(raw)); } catch { } }
-=======
         if (raw) {
           try {
             setMySubmissions(JSON.parse(raw));
           } catch {}
         }
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
         return;
       }
 
@@ -751,28 +681,20 @@ export default function DashboardPage() {
 
     const loadOffers = () => {
       const raw = localStorage.getItem('fe_my_offers');
-<<<<<<< HEAD
-      if (raw) { try { setMyOffers(JSON.parse(raw)); } catch { } }
-=======
       if (raw) {
         try {
           setMyOffers(JSON.parse(raw));
         } catch {}
       }
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
     };
 
     const loadNominations = () => {
       const raw = localStorage.getItem('fe_my_nominations');
-<<<<<<< HEAD
-      if (raw) { try { setMyNominations(JSON.parse(raw)); } catch { } }
-=======
       if (raw) {
         try {
           setMyNominations(JSON.parse(raw));
         } catch {}
       }
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
     };
 
     loadProfile();
@@ -793,7 +715,7 @@ export default function DashboardPage() {
           try {
             const list = JSON.parse(raw).filter((s: any) => s.id !== id);
             localStorage.setItem('fe_my_submissions', JSON.stringify(list));
-          } catch { }
+          } catch {}
         }
       } else {
         const data = await res.json();
@@ -1305,9 +1227,9 @@ export default function DashboardPage() {
         <div style={{ padding: '24px', borderBottom: '1px solid #1a1a1a' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             {userProfile?.avatarUrl ? (
-              <img src={userProfile.avatarUrl} alt={member.name} style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />
+              <img src={userProfile.avatarUrl} alt={member.name} style={{ width: 44, height: 44, objectFit: 'cover', flexShrink: 0 }} />
             ) : (
-              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
+              <div style={{ width: 44, height: 44, background: '#e7b605', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#000', flexShrink: 0 }}>
                 {member.name.charAt(0)}
               </div>
             )}
@@ -1316,7 +1238,7 @@ export default function DashboardPage() {
               <div style={{ fontSize: '12px', color: '#888' }}>{member.business}</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8, marginLeft: '56px' }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <span style={{ padding: '3px 10px', background: '#1a1a1a', color: '#888', fontSize: '10px', fontWeight: 600, letterSpacing: '0.05em' }}>{member.industry}</span>
           </div>
           <div style={{ marginTop: 16 }}>
@@ -1372,20 +1294,12 @@ export default function DashboardPage() {
 
         {/* Section content */}
         {activeSection === 'dashboard' && <DashboardSection />}
-<<<<<<< HEAD
-=======
         {activeSection === 'feed'      && <FeedSection memberName={member.name} memberBusiness={member.business} />}
         {activeSection === 'events'    && <EventsSection />}
         {activeSection === 'offers'    && <OffersSection />}
         {activeSection === 'awards'    && <AwardsSection />}
         {activeSection === 'business'  && <BusinessSection memberBusiness={member.business} />}
         {activeSection === 'owners'    && <OwnersSection memberName={member.name} memberBusiness={member.business} />}
->>>>>>> 9fc4a65c7e1483e734193b91814b4fd46853af43
-        {activeSection === 'events' && <EventsSection />}
-        {activeSection === 'offers' && <OffersSection />}
-        {activeSection === 'awards' && <AwardsSection />}
-        {activeSection === 'business' && <BusinessSection memberBusiness={member.business} />}
-        {activeSection === 'owners' && <OwnersSection memberName={member.name} memberBusiness={member.business} />}
       </main>
     </div>
   );
