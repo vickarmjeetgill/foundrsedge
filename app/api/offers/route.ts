@@ -1,6 +1,52 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentUser } from '@/lib/session';
+
+export async function GET(request: NextRequest) {
+    try {
+        const { searchParams } = new URL(request.url);
+
+        const category = searchParams.get('category');
+        const type = searchParams.get('type');
+        const featured = searchParams.get('featured');
+
+        const offers = await (prisma as any).offers.findMany({
+            where: {
+                status: 'approved',
+
+                ...(category && {
+                    category,
+                }),
+
+                ...(type && {
+                    type,
+                }),
+
+                ...(featured === 'true' && {
+                    fe_discount: {
+                        not: null,
+                    },
+                }),
+            },
+
+            orderBy: {
+                created_at: 'desc',
+            },
+        });
+
+        return NextResponse.json(offers);
+    } catch (error: any) {
+        console.error('Error fetching offers:', error);
+
+        return NextResponse.json(
+            {
+                success: false,
+                error: error.message,
+            },
+            { status: 500 }
+        );
+    }
+}
 
 export async function POST(request: Request) {
     try {
@@ -30,7 +76,7 @@ export async function POST(request: Request) {
             chosenBusinessId = newBusiness.id;
         }
 
-        const offer = await prisma.offers.create({
+       const offer = await (prisma as any).offers.create({
             data: {
                 member_id: memberId,
                 business_id: chosenBusinessId,
