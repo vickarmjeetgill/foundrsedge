@@ -70,6 +70,7 @@ model offers {
   events_page_url String?
   how_to_redeem   String?
   is_affiliate    Boolean  @default(false)
+  featured        Boolean  @default(false)
   status          String   @default("PENDING")
   created_at      DateTime @default(now()) @db.Timestamptz(6)
   updated_at      DateTime @updatedAt @db.Timestamptz(6)
