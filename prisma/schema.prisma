@@ -101,57 +101,6 @@ model events {
   members     members?    @relation(fields: [member_id], references: [id], onDelete: Cascade)
 }
 
-model comments {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  post_id         String         @db.Uuid
-  parent_id       String?        @db.Uuid
-  author_name     String
-  author_business String?
-  content         String
-  like_count      Int            @default(0)
-  removed         Boolean        @default(false)
-  created_at      DateTime       @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime       @db.Timestamptz(6)
-  posts           posts          @relation(fields: [post_id], references: [id], onDelete: Cascade)
-  flag_reports    flag_reports[]
-}
-
-model flag_reports {
-  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  content_type    String
-  content_id      String    @db.Uuid
-  content_preview String
-  author_name     String
-  reported_by     String
-  reason          String
-  details         String?
-  status          String    @default("pending")
-  reported_at     DateTime  @default(now()) @db.Timestamptz(6)
-  post_id         String?   @db.Uuid
-  comment_id      String?   @db.Uuid
-  comments        comments? @relation(fields: [comment_id], references: [id], onDelete: Cascade)
-  posts           posts?    @relation(fields: [post_id], references: [id], onDelete: Cascade)
-}
-
-model posts {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  author_name     String
-  author_business String?
-  content         String
-  linked_type     String?
-  linked_title    String?
-  linked_subtitle String?
-  linked_url      String?
-  like_count      Int            @default(0)
-  comment_count   Int            @default(0)
-  flag_count      Int            @default(0)
-  removed         Boolean        @default(false)
-  created_at      DateTime       @default(now()) @db.Timestamptz(6)
-  updated_at      DateTime       @db.Timestamptz(6)
-  comments        comments[]
-  flag_reports    flag_reports[]
-}
-
 enum EventStatus {
   PENDING
   APPROVED
@@ -160,39 +109,95 @@ enum EventStatus {
 }
 
 model awards {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String
-  org              String
-  category         String
-  region           String
-  deadline         String   
-  award_date       String   @map("awardDate")
-  value            String
-  cycle            String
-  desc             String
-  featured         Boolean  @default(false)
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  org             String
+  category        String
+  region          String
+  deadline        String   
+  award_date      String   @map("awardDate")
+  value           String
+  cycle           String
+  desc            String
+  featured        Boolean  @default(false)
   nominationsOpen Boolean  @default(true) @map("nominationsOpen")
-  sponsor          String?
-  created_at       DateTime @default(now()) @db.Timestamptz(6)
-  updated_at       DateTime @updatedAt @db.Timestamptz(6)
+  sponsor         String?
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
 
   nominations nominations[]
 }
 
 model nominations {
-  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  award_id String @db.Uuid
-  member_id String? @db.Uuid
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  award_id      String   @db.Uuid
+  member_id     String?  @db.Uuid
   business_name String
-  contact_name String
+  contact_name  String
   contact_email String
-  website String?
-  achievement String
-  statement String
-  status String @default("PENDING")
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-  updated_at DateTime @updatedAt @db.Timestamptz(6)
+  website       String?
+  achievement   String
+  statement     String
+  status        String   @default("PENDING")
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @updatedAt @db.Timestamptz(6)
 
-  award awards @relation(fields: [award_id], references: [id], onDelete: Cascade)
+  award   awards   @relation(fields: [award_id], references: [id], onDelete: Cascade)
   members members? @relation(fields: [member_id], references: [id], onDelete: SetNull)  
 }
+
+model posts {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  author_name     String
+  author_business String?
+  content         String
+  linked_type     String?
+  linked_title    String?
+  linked_subtitle String?
+  linked_url      String?
+  like_count      Int      @default(0)
+  comment_count   Int      @default(0)
+  flag_count      Int      @default(0)
+  removed         Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  comments     comments[]
+  flag_reports flag_reports[]
+}
+
+model comments {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  post_id         String   @db.Uuid
+  parent_id       String?  @db.Uuid
+  author_name     String
+  author_business String?
+  content         String
+  like_count      Int      @default(0)
+  removed         Boolean  @default(false)
+  created_at      DateTime @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime @updatedAt @db.Timestamptz(6)
+
+  post         posts          @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  flag_reports flag_reports[]
+}
+
+model flag_reports {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content_type    String
+  content_id      String   @db.Uuid
+  content_preview String
+  author_name     String
+  reported_by     String
+  reason          String
+  details         String?
+  status          String   @default("pending")
+  reported_at     DateTime @default(now()) @db.Timestamptz(6)
+
+  post_id    String? @db.Uuid
+  comment_id String? @db.Uuid
+
+  post    posts?    @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  comment comments? @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+}
+
