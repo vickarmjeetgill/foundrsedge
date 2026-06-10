@@ -28,18 +28,18 @@ model businesses {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model members {
-  id         String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  first_name String
-  last_name  String
-  email      String       @unique
-  phone      String?
-  linkedin   String?
-  stage      String?
-  industry   String?
-  created_at DateTime?    @default(now()) @db.Timestamptz(6)
-  businesses businesses[]
-  events     events[]
-  offers     offers[]
+  id          String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  first_name  String
+  last_name   String
+  email       String        @unique
+  phone       String?
+  linkedin    String?
+  stage       String?
+  industry    String?
+  created_at  DateTime?     @default(now()) @db.Timestamptz(6)
+  businesses  businesses[]
+  events      events[]
+  offers      offers[]
   nominations nominations[]
 }
 
@@ -114,7 +114,7 @@ model awards {
   org             String
   category        String
   region          String
-  deadline        String   
+  deadline        String
   award_date      String   @map("awardDate")
   value           String
   cycle           String
@@ -143,7 +143,7 @@ model nominations {
   updated_at    DateTime @updatedAt @db.Timestamptz(6)
 
   award   awards   @relation(fields: [award_id], references: [id], onDelete: Cascade)
-  members members? @relation(fields: [member_id], references: [id], onDelete: SetNull)  
+  members members? @relation(fields: [member_id], references: [id], onDelete: SetNull)
 }
 
 model posts {
@@ -162,8 +162,9 @@ model posts {
   created_at      DateTime @default(now()) @db.Timestamptz(6)
   updated_at      DateTime @updatedAt @db.Timestamptz(6)
 
-  comments     comments[]
-  flag_reports flag_reports[]
+  comments      comments[]
+  flag_reports  flag_reports[]
+  notifications notifications[]
 }
 
 model comments {
@@ -201,3 +202,13 @@ model flag_reports {
   comment comments? @relation(fields: [comment_id], references: [id], onDelete: Cascade)
 }
 
+model notifications {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type       String
+  message    String
+  post_id    String?  @db.Uuid
+  read       Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  post posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+}
