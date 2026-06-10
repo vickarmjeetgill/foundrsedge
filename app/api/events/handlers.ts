@@ -147,10 +147,15 @@ export async function createEvent(request: Request) {
 
     let memberId: string | null = null
 
+    let isAdmin = false
+
     // Find the logged-in member to associate this event submission with them
     if (sessionToken) {
       try {
-        const decoded = await decrypt(sessionToken) as { userId: string }
+        const decoded = await decrypt(sessionToken) as { userId: string; role: string }
+        if (decoded?.role === "ADMIN") {
+          isAdmin = true
+        }
         if (decoded?.userId) {
           const user = await prisma.user.findUnique({
             where: { id: decoded.userId }
@@ -178,7 +183,7 @@ export async function createEvent(request: Request) {
       )
     }
 
-    // Save the new event in the database (sets status to PENDING until an admin reviews it)
+    // Save the new event in the database (sets status to APPROVED for admin, PENDING for others)
     const newEvent = await prisma.events.create({
       data: {
         title,
@@ -190,7 +195,7 @@ export async function createEvent(request: Request) {
         price: price || "Free",
         host: host || "Member Submission",
         member_id: memberId,
-        status: "PENDING",
+        status: isAdmin ? "APPROVED" : "PENDING",
         capacity: capacity ? Number(capacity) : 50,
         featured: typeof featured === "boolean" ? featured : false,
         duration: duration || "2 Hours",
@@ -535,6 +540,64 @@ export async function toggleEventFeature(
     console.error("Failed to update event featured status:", error)
     return NextResponse.json(
       { error: `Failed to update featured status: ${error.message}` },
+      { status: 500 }
+    )
+  }
+}
+
+export async function rsvpEvent(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    if (!isValidUUID(id)) {
+      return NextResponse.json({ error: "Invalid event ID format" }, { status: 400 })
+    }
+
+    const cookieStore = await cookies()
+    const sessionToken = cookieStore.get("session")?.value
+
+    if (!sessionToken) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const decoded = await decrypt(sessionToken) as { userId: string }
+    if (!decoded?.userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const event = await prisma.events.findUnique({
+      where: { id }
+    })
+
+    if (!event) {
+      return NextResponse.json({ error: "Event not found" }, { status: 404 })
+    }
+
+    if (event.attendees >= event.capacity) {
+      return NextResponse.json({ error: "Event is already full" }, { status: 400 })
+    }
+
+    const updatedEvent = await prisma.events.update({
+      where: { id },
+      data: {
+        attendees: {
+          increment: 1
+        }
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Successfully RSVP'd for the event",
+      event: updatedEvent
+    })
+  } catch (error: any) {
+    console.error("Failed to RSVP event:", error)
+    return NextResponse.json(
+      { error: `Failed to RSVP: ${error.message}` },
       { status: 500 }
     )
   }

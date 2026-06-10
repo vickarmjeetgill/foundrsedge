@@ -42,16 +42,16 @@ const recommendations = {
 
 // Nav items: `section` = stay on dashboard and switch view; `href` = navigate away
 const navItems: { icon: React.ElementType; label: string; section?: Section; href?: string }[] = [
-  { icon: TrendingUp, label: 'Dashboard',  section: 'dashboard' },
-  { icon: Rss,        label: 'Feed',       section: 'feed' },
-  { icon: Calendar,   label: 'Events',     section: 'events' },
-  { icon: Tag,        label: 'Offers',     section: 'offers' },
-  { icon: Trophy,     label: 'Awards',     section: 'awards' },
-  { icon: Building2,  label: 'Business',   section: 'business' },
-  { icon: UserCircle, label: 'Owners',     section: 'owners' },
-  { icon: Users,      label: 'My Matches', href: '/dashboard/matches' },
-  { icon: BookOpen,   label: 'Resources',  href: '/resources' },
-  { icon: Star,       label: 'Supper Club', href: '/supper-club' },
+  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
+  { icon: Rss, label: 'Feed', section: 'feed' },
+  { icon: Calendar, label: 'Events', section: 'events' },
+  { icon: Tag, label: 'Offers', section: 'offers' },
+  { icon: Trophy, label: 'Awards', section: 'awards' },
+  { icon: Building2, label: 'Business', section: 'business' },
+  { icon: UserCircle, label: 'Owners', section: 'owners' },
+  { icon: Users, label: 'My Matches', href: '/dashboard/matches' },
+  { icon: BookOpen, label: 'Resources', href: '/resources' },
+  { icon: Star, label: 'Supper Club', href: '/supper-club' },
 ];
 
 type Submission = {
@@ -75,20 +75,20 @@ type MyOffer = {
   status: 'pending' | 'approved' | 'rejected';
 };
 const statusStyles: Record<'pending' | 'approved' | 'rejected' | 'archived', { bg: string; color: string; label: string }> = {
-  pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
-  approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60', label: 'Approved' },
-  rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b', label: 'Rejected' },
-  archived: { bg: 'rgba(90,86,80,0.1)',    color: '#5a5650', label: 'Archived' },
+  pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending Review' },
+  approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
+  rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
+  archived: { bg: 'rgba(90,86,80,0.1)', color: '#5a5650', label: 'Archived' },
 };
 
 const sectionTitles: Record<Section, string> = {
   dashboard: 'Dashboard',
-  feed:      'Community Feed',
-  events:    'My Events',
-  offers:    'My Offers',
-  awards:    'My Awards',
-  business:  'Business Profiles',
-  owners:    'Owner Network',
+  feed: 'Community Feed',
+  events: 'My Events',
+  offers: 'My Offers',
+  awards: 'My Awards',
+  business: 'Business Profiles',
+  owners: 'Owner Network',
 };
 
 // ── Shared label style ───────────────────────────────────────────
@@ -323,7 +323,7 @@ function BusinessSection({ memberBusiness }: { memberBusiness: string }) {
 }
 
 // ── Owners Section ───────────────────────────────────────────────
-function OwnersSection({ memberName, memberBusiness }: { memberName: string; memberBusiness: string }) {
+function OwnersSection({ memberName, memberBusiness, setConfirmModal }: { memberName: string; memberBusiness: string; setConfirmModal: any }) {
   const [myProfile, setMyProfile] = useState<OwnerProfile | null>(null);
   const [posts, setPosts] = useState<OwnerPost[]>([]);
   const [editMode, setEditMode] = useState(false);
@@ -526,7 +526,14 @@ function OwnersSection({ memberName, memberBusiness }: { memberName: string; mem
                     {post.type === 'seeking' ? '🔍 Seeking' : '🤝 Offering'}
                   </span>
                   {post.isOwn && (
-                    <button onClick={() => { if (confirm('Remove this post?')) deletePost(post.id); }} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.2s' }}
+                    <button onClick={() => {
+                      setConfirmModal({
+                        isOpen: true,
+                        title: 'Remove Post',
+                        message: 'Are you sure you want to remove this post from the board?',
+                        onConfirm: () => deletePost(post.id),
+                      });
+                    }} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '5px 10px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontSize: '11px', fontWeight: 700, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', transition: 'all 0.2s' }}
                       onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}
                     >
@@ -576,6 +583,17 @@ export default function DashboardPage() {
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
   const [myNominations, setMyNominations] = useState<Nomination[]>([]);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -592,7 +610,7 @@ export default function DashboardPage() {
       const userEmail = loggedInUser.email || '';
       const userName = loggedInUser.name || 'Member';
 
-       const { data, error } = await supabase
+      const { data, error } = await supabase
         .from('members')
         .select(`
           id,
@@ -625,9 +643,9 @@ export default function DashboardPage() {
           industry: data.industry ?? businessData?.business_type ?? 'Member',
           joined: data.created_at
             ? new Date(data.created_at).toLocaleDateString('en-US', {
-                month: 'short',
-                year: 'numeric',
-              })
+              month: 'short',
+              year: 'numeric',
+            })
             : 'May 2026',
           profileCompletion: 85,
         });
@@ -652,7 +670,7 @@ export default function DashboardPage() {
         if (raw) {
           try {
             setMySubmissions(JSON.parse(raw));
-          } catch {}
+          } catch { }
         }
         return;
       }
@@ -679,21 +697,52 @@ export default function DashboardPage() {
       }
     };
 
-    const loadOffers = () => {
-      const raw = localStorage.getItem('fe_my_offers');
-      if (raw) {
-        try {
-          setMyOffers(JSON.parse(raw));
-        } catch {}
+    const loadOffers = async () => {
+      try {
+        const res = await fetch('/api/offers?mySubmissions=true');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: MyOffer[] = dbData.map((o: any) => ({
+            id: o.id,
+            title: o.title,
+            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+            category: o.category,
+            type: o.type,
+            expiryDate: o.expiry_date,
+            submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+            status: o.status.toLowerCase() as any,
+          }));
+          setMyOffers(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load offers from API:', err);
       }
     };
 
-    const loadNominations = () => {
-      const raw = localStorage.getItem('fe_my_nominations');
-      if (raw) {
-        try {
-          setMyNominations(JSON.parse(raw));
-        } catch {}
+    const loadNominations = async () => {
+      try {
+        const res = await fetch('/api/nominations');
+        if (res.ok) {
+          const dbNoms = await res.json();
+          const mapped: Nomination[] = dbNoms.map((n: any) => ({
+            id: n.id,
+            awardId: n.award_id,
+            awardName: n.award?.name || 'Unknown Award',
+            awardOrg: n.award?.org || '',
+            businessName: n.business_name,
+            category: n.award?.category || '',
+            contactName: n.contact_name,
+            contactEmail: n.contact_email,
+            website: n.website || '',
+            achievement: n.achievement,
+            statement: n.statement,
+            status: n.status.toLowerCase() as any,
+            submittedAt: n.created_at,
+          }));
+          setMyNominations(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to load nominations from API:', err);
       }
     };
 
@@ -715,7 +764,7 @@ export default function DashboardPage() {
           try {
             const list = JSON.parse(raw).filter((s: any) => s.id !== id);
             localStorage.setItem('fe_my_submissions', JSON.stringify(list));
-          } catch {}
+          } catch { }
         }
       } else {
         const data = await res.json();
@@ -727,30 +776,37 @@ export default function DashboardPage() {
     }
   }
 
-  function deleteOffer(id: string) {
-    const updated = myOffers.filter(o => o.id !== id);
-    setMyOffers(updated);
-    localStorage.setItem('fe_my_offers', JSON.stringify(updated));
-    const adminRaw = localStorage.getItem('fe_all_submitted_offers');
-    if (adminRaw) {
-      try {
-        const adminOffers = JSON.parse(adminRaw).filter((o: MyOffer) => o.id !== id);
-        localStorage.setItem('fe_all_submitted_offers', JSON.stringify(adminOffers));
-        localStorage.setItem('fe_approved_offers', JSON.stringify(adminOffers.filter((o: MyOffer) => o.status === 'approved')));
-      } catch { }
+  async function deleteOffer(id: string) {
+    try {
+      const res = await fetch(`/api/offers/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setMyOffers(prev => prev.filter(o => o.id !== id));
+      } else {
+        const data = await res.json();
+        alert(`Error deleting offer: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Failed to delete offer:", err);
+      alert("Failed to delete offer due to network error.");
     }
   }
 
-  function deleteNomination(id: string) {
-    const updated = myNominations.filter(n => n.id !== id);
-    setMyNominations(updated);
-    localStorage.setItem('fe_my_nominations', JSON.stringify(updated));
-    const adminRaw = localStorage.getItem('fe_all_nominations');
-    if (adminRaw) {
-      try {
-        const adminNoms = JSON.parse(adminRaw).filter((n: Nomination) => n.id !== id);
-        localStorage.setItem('fe_all_nominations', JSON.stringify(adminNoms));
-      } catch { }
+  async function deleteNomination(id: string) {
+    try {
+      const res = await fetch(`/api/nominations/${id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setMyNominations(prev => prev.filter(n => n.id !== id));
+      } else {
+        const data = await res.json();
+        alert(`Error deleting nomination: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error("Failed to delete nomination:", err);
+      alert("Failed to delete nomination due to network error.");
     }
   }
 
@@ -851,7 +907,14 @@ export default function DashboardPage() {
                         </Link>
                       )}
                       <button
-                        onClick={() => { if (confirm('Delete this submission?')) deleteSubmission(sub.id); }}
+                        onClick={() => {
+                          setConfirmModal({
+                            isOpen: true,
+                            title: 'Delete Submission',
+                            message: 'Are you sure you want to permanently delete this event submission?',
+                            onConfirm: () => deleteSubmission(sub.id),
+                          });
+                        }}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}
@@ -954,7 +1017,14 @@ export default function DashboardPage() {
                         </Link>
                       )}
                       <button
-                        onClick={() => { if (confirm('Delete this offer?')) deleteOffer(offer.id); }}
+                        onClick={() => {
+                          setConfirmModal({
+                            isOpen: true,
+                            title: 'Delete Offer',
+                            message: 'Are you sure you want to delete this offer submission?',
+                            onConfirm: () => deleteOffer(offer.id),
+                          });
+                        }}
                         style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}
@@ -1048,7 +1118,14 @@ export default function DashboardPage() {
                       )}
                       {nom.status !== 'winner' && (
                         <button
-                          onClick={() => { if (confirm('Withdraw this nomination?')) deleteNomination(nom.id); }}
+                          onClick={() => {
+                            setConfirmModal({
+                              isOpen: true,
+                              title: 'Withdraw Nomination',
+                              message: 'Are you sure you want to withdraw this nomination? This action cannot be undone.',
+                              onConfirm: () => deleteNomination(nom.id),
+                            });
+                          }}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 14px', background: 'transparent', border: '1px solid #e2e0d8', color: '#9a9585', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', transition: 'all 0.2s' }}
                           onMouseEnter={e => { e.currentTarget.style.borderColor = '#c0392b'; e.currentTarget.style.color = '#c0392b'; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#9a9585'; }}
@@ -1294,13 +1371,93 @@ export default function DashboardPage() {
 
         {/* Section content */}
         {activeSection === 'dashboard' && <DashboardSection />}
-        {activeSection === 'feed'      && <FeedSection memberName={member.name} memberBusiness={member.business} />}
-        {activeSection === 'events'    && <EventsSection />}
-        {activeSection === 'offers'    && <OffersSection />}
-        {activeSection === 'awards'    && <AwardsSection />}
-        {activeSection === 'business'  && <BusinessSection memberBusiness={member.business} />}
-        {activeSection === 'owners'    && <OwnersSection memberName={member.name} memberBusiness={member.business} />}
+        {activeSection === 'feed' && <FeedSection memberName={member.name} memberBusiness={member.business} />}
+        {activeSection === 'events' && <EventsSection />}
+        {activeSection === 'offers' && <OffersSection />}
+        {activeSection === 'awards' && <AwardsSection />}
+        {activeSection === 'business' && <BusinessSection memberBusiness={member.business} />}
+        {activeSection === 'owners' && <OwnersSection memberName={member.name} memberBusiness={member.business} setConfirmModal={setConfirmModal} />}
       </main>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '1px solid #e2e0d8',
+            padding: '32px',
+            maxWidth: '440px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+          }}>
+            <h3 style={{
+              fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 800,
+              fontSize: '20px',
+              color: '#2a2820',
+              marginBottom: '12px'
+            }}>
+              {confirmModal.title}
+            </h3>
+            <p style={{
+              fontFamily: 'Noto Serif, serif',
+              color: '#5a5650',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              marginBottom: '24px'
+            }}>
+              {confirmModal.message}
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                style={{
+                  padding: '10px 20px',
+                  border: '1px solid #e2e0d8',
+                  background: 'transparent',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  color: '#5a5650'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                }}
+                className="btn-primary"
+                style={{
+                  padding: '10px 20px',
+                  fontSize: '13px',
+                  background: '#c0392b',
+                  borderColor: '#c0392b',
+                  color: '#fff',
+                  cursor: 'pointer'
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

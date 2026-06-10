@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { login } from '@/app/actions/auth';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +13,8 @@ export default function LoginPage() {
   const [error, setError] = useState('');
 
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get('redirectTo') || '/dashboard';
 
   async function handleSubmit(formData: FormData) {
     const result = await login(formData);
@@ -24,7 +26,7 @@ export default function LoginPage() {
         localStorage.setItem('fe_admin', 'true');
         router.push('/admin/dashboard');
       } else {
-        router.push('/dashboard');
+        router.push(redirectTo);
       }
     }
   }

@@ -49,25 +49,66 @@ export default function AdminAwardsPage() {
 
   useEffect(() => {
     if (!authChecked) return;
-    // Merge member nominations into admin pool
-    const myRaw  = localStorage.getItem('fe_my_nominations');
-    const allRaw = localStorage.getItem('fe_all_nominations');
-    const mine: Nomination[] = myRaw  ? JSON.parse(myRaw)  : [];
-    const all:  Nomination[] = allRaw ? JSON.parse(allRaw) : [];
-    const allIds  = new Set(all.map(n => n.id));
-    const merged  = [...all, ...mine.filter(n => !allIds.has(n.id))];
-    setNominations(merged);
-    if (merged.length !== all.length) localStorage.setItem('fe_all_nominations', JSON.stringify(merged));
+
+    async function loadNominations() {
+      try {
+        const res = await fetch('/api/nominations');
+        if (!res.ok) return;
+        const dbNoms = await res.json();
+        const mapped: Nomination[] = dbNoms.map((n: any) => ({
+          id: n.id,
+          awardId: n.award_id,
+          awardName: n.award?.name || '',
+          awardOrg: n.award?.org || '',
+          businessName: n.business_name,
+          category: n.award?.category || '',
+          contactName: n.contact_name,
+          contactEmail: n.contact_email,
+          website: n.website || '',
+          achievement: n.achievement,
+          statement: n.statement,
+          status: n.status.toLowerCase() as any,
+          submittedAt: n.created_at,
+        }));
+        setNominations(mapped);
+      } catch (err) {
+        console.error('Failed to load nominations from DB:', err);
+      }
+    }
+
+    loadNominations();
   }, [authChecked]);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
-  function updateNom(id: string, changes: Partial<Nomination>) {
-    setNominations(prev => {
-      const updated = prev.map(n => n.id === id ? { ...n, ...changes } : n);
-      localStorage.setItem('fe_all_nominations', JSON.stringify(updated));
-      return updated;
-    });
+  async function updateNom(id: string, changes: Partial<Nomination>) {
+    try {
+      const dbChanges: any = {};
+      if (changes.status) dbChanges.status = changes.status.toUpperCase();
+      if (changes.businessName) dbChanges.business_name = changes.businessName;
+      if (changes.contactName) dbChanges.contact_name = changes.contactName;
+      if (changes.contactEmail) dbChanges.contact_email = changes.contactEmail;
+      if (changes.website) dbChanges.website = changes.website;
+      if (changes.achievement) dbChanges.achievement = changes.achievement;
+      if (changes.statement) dbChanges.statement = changes.statement;
+
+      const res = await fetch(`/api/nominations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dbChanges),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        showToast(errData.error || 'Failed to update nomination in DB');
+        return;
+      }
+
+      setNominations(prev => prev.map(n => n.id === id ? { ...n, ...changes } : n));
+    } catch (err) {
+      console.error('Error updating nomination status:', err);
+      showToast('Error connecting to the server');
+    }
   }
 
   const filtered = nominations

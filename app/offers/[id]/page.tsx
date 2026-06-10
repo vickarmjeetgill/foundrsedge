@@ -24,18 +24,68 @@ export default function OfferDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const raw = localStorage.getItem('fe_approved_offers');
-    if (raw) {
+    async function loadOfferDetail() {
       try {
-        const all: Offer[] = JSON.parse(raw);
-        const found = all.find(o => o.id === id && o.status === 'approved');
-        setOffer(found || null);
-        setOtherOffers(all.filter(o => o.id !== id && o.status === 'approved').slice(0, 3));
-      } catch {
-        setOffer(null);
+        setLoading(true);
+        const res = await fetch(`/api/offers/${id}`);
+        if (res.ok) {
+          const o = await res.json();
+          const mappedOffer: Offer = {
+            id: o.id,
+            businessName: o.business_name,
+            businessId: o.business_id,
+            title: o.title,
+            type: o.type,
+            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+            description: o.description,
+            category: o.category,
+            location: o.location || 'Calgary, AB',
+            expiryDate: o.expiry_date,
+            status: o.status.toLowerCase(),
+            featured: o.featured || false,
+            submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+            foundersEdgeDiscount: o.fe_discount,
+            eventsPageUrl: o.events_page_url,
+            howToRedeem: o.how_to_redeem
+          };
+          setOffer(mappedOffer);
+        } else {
+          setOffer(null);
+        }
+
+        const resOthers = await fetch('/api/offers');
+        if (resOthers.ok) {
+          const dbOthers = await resOthers.json();
+          const mappedOthers: Offer[] = dbOthers
+            .filter((o: any) => o.id !== id)
+            .slice(0, 3)
+            .map((o: any) => ({
+              id: o.id,
+              businessName: o.business_name,
+              businessId: o.business_id,
+              title: o.title,
+              type: o.type,
+              discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+              description: o.description,
+              category: o.category,
+              location: o.location || 'Calgary, AB',
+              expiryDate: o.expiry_date,
+              status: o.status.toLowerCase(),
+              featured: o.featured || false,
+              submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+              foundersEdgeDiscount: o.fe_discount,
+              eventsPageUrl: o.events_page_url,
+              howToRedeem: o.how_to_redeem
+            }));
+          setOtherOffers(mappedOthers);
+        }
+      } catch (err) {
+        console.error("Failed to load offer details:", err);
+      } finally {
+        setLoading(false);
       }
     }
-    setLoading(false);
+    loadOfferDetail();
   }, [id]);
 
   if (loading) {

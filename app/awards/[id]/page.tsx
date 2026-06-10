@@ -12,20 +12,44 @@ function daysUntil(dateStr: string) {
 
 export default function AwardDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const [award, setAward]   = useState<Award | null>(null);
+  const [award, setAward] = useState<Award | null>(null);
   const [others, setOthers] = useState<Award[]>([]);
   const [loading, setLoading] = useState(true);
   const [nominated, setNominated] = useState(false);
 
   useEffect(() => {
-    // Merge seed + admin awards
-    const raw = localStorage.getItem('fe_admin_awards');
-    const adminAwards: Award[] = raw ? JSON.parse(raw) : [];
-    const seedIds = new Set(seedAwards.map((a: Award) => a.id));
-    const all = [...seedAwards, ...adminAwards.filter((a: Award) => !seedIds.has(a.id))];
-    const found = all.find(a => a.id === id) ?? null;
-    setAward(found);
-    setOthers(all.filter(a => a.id !== id && a.nominationsOpen).slice(0, 3));
+    async function loadAwardDetails() {
+      try {
+        setLoading(true);
+        // Fetch current award details
+        const detailRes = await fetch(`/api/awards/${id}`);
+        if (detailRes.ok) {
+          const detailData = await detailRes.json();
+          const mappedAward: Award = {
+            ...detailData,
+            awardDate: detailData.award_date || detailData.awardDate || '',
+          };
+          setAward(mappedAward);
+        } else {
+          setAward(null);
+        }
+
+        // Fetch other awards for the recommendations slider
+        const listRes = await fetch('/api/awards');
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          const mappedList: Award[] = listData.map((a: any) => ({
+            ...a,
+            awardDate: a.award_date || a.awardDate || '',
+          }));
+          setOthers(mappedList.filter((a: Award) => a.id !== id && a.nominationsOpen).slice(0, 3));
+        }
+      } catch (error) {
+        console.error('Error fetching award details:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
 
     // Check if already nominated
     const nomRaw = localStorage.getItem('fe_my_nominations');
@@ -33,9 +57,10 @@ export default function AwardDetailPage({ params }: { params: Promise<{ id: stri
       try {
         const noms = JSON.parse(nomRaw);
         setNominated(noms.some((n: any) => n.awardId === id));
-      } catch {}
+      } catch { }
     }
-    setLoading(false);
+
+    loadAwardDetails();
   }, [id]);
 
   if (loading) {
@@ -60,7 +85,7 @@ export default function AwardDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const days     = daysUntil(award.deadline);
+  const days = daysUntil(award.deadline);
   const isUrgent = days !== null && days <= 30 && days >= 0;
   const isClosed = !award.nominationsOpen || (days !== null && days < 0);
 
@@ -118,11 +143,11 @@ export default function AwardDetailPage({ params }: { params: Promise<{ id: stri
                 <div className="section-label" style={{ marginBottom: 20 }}>Award Details</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   {[
-                    { label: 'Category',       value: award.category },
-                    { label: 'Region',         value: award.region },
-                    { label: 'Prize / Value',  value: award.value },
-                    { label: 'Frequency',      value: award.cycle },
-                    { label: 'Award Date',     value: award.awardDate ? new Date(award.awardDate).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' }) : 'TBD' },
+                    { label: 'Category', value: award.category },
+                    { label: 'Region', value: award.region },
+                    { label: 'Prize / Value', value: award.value },
+                    { label: 'Frequency', value: award.cycle },
+                    { label: 'Award Date', value: award.awardDate ? new Date(award.awardDate).toLocaleDateString('en-CA', { month: 'long', day: 'numeric', year: 'numeric' }) : 'TBD' },
                     ...(award.sponsor ? [{ label: 'Sponsor', value: award.sponsor }] : []),
                   ].map(row => (
                     <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f0efe9', paddingBottom: 12, fontFamily: 'DM Sans, sans-serif', fontSize: '13px' }}>

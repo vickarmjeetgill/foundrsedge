@@ -68,16 +68,36 @@ export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
 
   useEffect(() => {
-    // Load approved offers from localStorage (set by admin moderation)
-    const raw = localStorage.getItem('fe_approved_offers');
-    if (raw) {
+    async function loadOffers() {
       try {
-        const parsed: Offer[] = JSON.parse(raw);
-        setOffers(parsed.filter(o => o.status === 'approved'));
-      } catch {
-        setOffers([]);
+        const res = await fetch('/api/offers');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: Offer[] = dbData.map((o: any) => ({
+            id: o.id,
+            businessName: o.business_name,
+            businessId: o.business_id,
+            title: o.title,
+            type: o.type,
+            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+            description: o.description,
+            category: o.category,
+            location: o.location || 'Calgary, AB',
+            expiryDate: o.expiry_date,
+            status: o.status.toLowerCase(),
+            featured: o.featured || false,
+            submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+            foundersEdgeDiscount: o.fe_discount,
+            eventsPageUrl: o.events_page_url,
+            howToRedeem: o.how_to_redeem
+          }));
+          setOffers(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load offers:", err);
       }
     }
+    loadOffers();
   }, []);
 
   const selectedType = typeMap[typeFilter];

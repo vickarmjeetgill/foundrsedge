@@ -7,27 +7,27 @@ import { redirect } from 'next/navigation';
 
 // Server Action for user login
 export async function login(formData: FormData) {
-    // 1. Extract email and password from the form submission
+    // Extract email and password from the form submission
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
-    // 2. Validate input fields
+    // Validate input fields
     if (!email || !password) {
         return { error: "Email and password are required" }
     }
 
     try {
-        // 3. Find the user by their email in the database
+        // Find the user by their email in the database
         const user = await prisma.user.findUnique({
             where: { email },
         })
 
-        // 4. Verify user exists and compare passwords using bcrypt
+        // Verify user exists and compare passwords using bcrypt
         if (!user || !(await bcrypt.compare(password, user.password))) {
             return { error: "Invalid email or password." }
         }
 
-        // 5. Establish session cookies (access token + refresh token)
+        // Establish session cookies (access token + refresh token)
         await setSession(user.id)
 
         // 6. Return user details on successful login
@@ -43,20 +43,20 @@ export async function login(formData: FormData) {
 
 // Server Action for registering a new user
 export async function register(formData: FormData) {
-    // 1. Extract email and password from the registration form
+    // Extract email and password from the registration form
     const email = formData.get("email") as string
     const password = formData.get("password") as string
 
-    // 2. Validate inputs
+    // Validate inputs
     if (!email || !password) {
         return { error: "Email and password are required" }
     }
 
     try {
-        // 3. Hash the plain text password for secure storage
+        // Hash the plain text password for secure storage
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        // 4. Create the new User record in the database
+        // Create the new User record in the database
         const user = await prisma.user.create({
             data: {
                 email,
@@ -64,7 +64,7 @@ export async function register(formData: FormData) {
             },
         })
 
-        // 5. Automatically log the user in by setting the session cookies
+        // Automatically log the user in by setting the session cookies
         await setSession(user.id)
 
         return { success: true }
@@ -80,9 +80,9 @@ export async function register(formData: FormData) {
 
 // Server Action to log a user out
 export async function logout() {
-    // 1. Delete access and refresh token cookies
+    // Delete access and refresh token cookies
     await deleteSession();
-    // 2. Redirect back to the login page
+    // Redirect back to the login page
     redirect('/login');
 }
 

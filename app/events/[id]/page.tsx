@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Calendar, MapPin, Clock, Users, Share2, ArrowLeft, Wifi, Star, ChevronRight } from 'lucide-react';
 import PageLayout from '@/components/PageLayout';
 import { use, useState, useEffect } from 'react';
+import { getProfile } from '@/app/actions/profile';
 
 type Event = {
   id: number;
@@ -57,6 +58,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
   const [event, setEvent] = useState<any | null>(null);
   const [otherEvents, setOtherEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userProfile, setUserProfile] = useState<any | null>(null);
+  const [hasRsvpd, setHasRsvpd] = useState(false);
+  const [rsvpLoading, setRsvpLoading] = useState(false);
+  const [rsvpFeedback, setRsvpFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // 2. Fetch the event details and recommendations when the page loads
   useEffect(() => {
@@ -80,6 +85,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
           // Filter out the current event and get up to 2 recommendations
           setOtherEvents(othersData.filter((e: any) => e.id !== id).slice(0, 2));
         }
+
+        // Check user profile
+        const profRes = await getProfile();
+        if (profRes.success && profRes.user) {
+          setUserProfile(profRes.user);
+        }
+
+        // Check local storage for RSVP status
+        if (typeof window !== 'undefined') {
+          const rsvps = JSON.parse(localStorage.getItem('fe_rsvp_events') || '[]');
+          if (rsvps.includes(id)) {
+            setHasRsvpd(true);
+          }
+        }
       } catch (err) {
         console.error("Failed to load event details:", err);
       } finally {
@@ -89,6 +108,46 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
 
     loadEventDetails();
   }, [id]);
+
+  const handleRsvp = async () => {
+    if (!userProfile) {
+      window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+      return;
+    }
+
+    if (hasRsvpd) return;
+
+    try {
+      setRsvpLoading(true);
+      setRsvpFeedback(null);
+      const res = await fetch(`/api/events/${id}/rsvp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        // Update local storage
+        const rsvps = JSON.parse(localStorage.getItem('fe_rsvp_events') || '[]');
+        if (!rsvps.includes(id)) {
+          rsvps.push(id);
+          localStorage.setItem('fe_rsvp_events', JSON.stringify(rsvps));
+        }
+        setHasRsvpd(true);
+        // Refresh event data to show updated attendees count
+        setEvent(data.event);
+        setRsvpFeedback({ type: 'success', message: "Successfully registered for the event!" });
+      } else {
+        const errorData = await res.json();
+        setRsvpFeedback({ type: 'error', message: errorData.error || "Failed to RSVP." });
+      }
+    } catch (err) {
+      console.error("RSVP error:", err);
+      setRsvpFeedback({ type: 'error', message: "An error occurred. Please try again." });
+    } finally {
+      setRsvpLoading(false);
+    }
+  };
 
   // 3. Show a loading screen while fetching
   if (loading) {
@@ -293,14 +352,30 @@ export default function EventDetailPage({ params }: { params: Promise<{ id: stri
                   <button
                     className="btn-primary"
                     style={{ width: '100%', justifyContent: 'center', fontSize: '14px' }}
-                    disabled={spotsLeft === 0}
+                    onClick={handleRsvp}
+                    disabled={spotsLeft === 0 || hasRsvpd || rsvpLoading}
                   >
-                    {spotsLeft === 0 ? 'Event Full' : event.price === 'Members' ? 'Login to Register' : 'RSVP / Register'}
+                    {spotsLeft === 0 ? 'Event Full' : hasRsvpd ? 'Registered ✓' : rsvpLoading ? 'Registering...' : (!userProfile && event.price === 'Members') ? 'Login to Register' : 'RSVP / Register'}
                   </button>
-                  {event.price !== 'Free' && event.price !== 'Members' && (
+                  {event.price !== 'Free' && event.price !== 'Members' && !hasRsvpd && (
                     <p style={{ textAlign: 'center', marginTop: 12, fontSize: '12px', color: '#9a9585', fontFamily: 'DM Sans, sans-serif' }}>
                       Secure payment via Stripe
                     </p>
+                  )}
+                  {rsvpFeedback && (
+                    <div style={{
+                      marginTop: 12,
+                      padding: '10px 14px',
+                      background: rsvpFeedback.type === 'success' ? '#f0faf2' : '#fdf3f2',
+                      border: `1px solid ${rsvpFeedback.type === 'success' ? '#b2dfbd' : '#f5c6cb'}`,
+                      color: rsvpFeedback.type === 'success' ? '#1e7e34' : '#721c24',
+                      fontFamily: 'DM Sans, sans-serif',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      textAlign: 'center'
+                    }}>
+                      {rsvpFeedback.message}
+                    </div>
                   )}
                 </div>
 

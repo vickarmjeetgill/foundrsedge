@@ -61,59 +61,98 @@ export default function AdminOffersPage() {
   useEffect(() => {
     if (!authChecked) return;
 
-    const seedOffers: Offer[] = [
-      { id: 'seed_offer_1', businessName: 'Apex Marketing Group', title: '20% Off Brand Strategy Package', type: 'percentage', discount: '20% off', description: 'Founders Edge members get 20% off our full brand strategy engagement — includes brand audit, positioning workshop, and identity refresh.', category: 'Marketing & Design', location: 'Calgary, AB', expiryDate: '2026-12-31', status: 'approved', featured: true, submittedAt: '2026-01-10T09:00:00Z' },
-      { id: 'seed_offer_2', businessName: 'TechStack Solutions', title: 'Free Cloud Migration Assessment', type: 'custom', discount: 'Free assessment', description: 'Get a complimentary 2-hour cloud infrastructure assessment (valued at $500) for all Founders Edge members looking to migrate or optimize.', category: 'Technology', location: 'Remote', expiryDate: '2026-09-30', status: 'approved', featured: false, submittedAt: '2026-01-15T10:30:00Z' },
-      { id: 'seed_offer_3', businessName: 'Prairie Legal Group', title: '$250 Off Business Formation Package', type: 'fixed', discount: '$250 off', description: 'Exclusive discount on our complete business formation package — incorporation, shareholder agreement, and registered address for one year.', category: 'Finance & Legal', location: 'Calgary, AB', expiryDate: '2026-08-15', status: 'approved', featured: true, submittedAt: '2026-02-01T08:00:00Z' },
-      { id: 'seed_offer_4', businessName: 'Velocity HR', title: 'Buy 1 HR Audit Get 1 Free', type: 'bogo', discount: 'BOGO', description: 'Purchase an HR compliance audit and receive a second one free — perfect for businesses with multiple entities or partners.', category: 'Professional Services', location: 'Calgary, AB', expiryDate: '2026-07-31', status: 'pending', featured: false, submittedAt: '2026-04-20T14:00:00Z' },
-      { id: 'seed_offer_5', businessName: 'FounderFit Wellness', title: '15% Off Annual Membership', type: 'percentage', discount: '15% off', description: 'Founders Edge members save 15% on annual gym and wellness memberships — includes group classes, nutrition coaching, and monthly check-ins.', category: 'Health & Wellness', location: 'Calgary, AB', expiryDate: '2026-10-01', status: 'pending', featured: false, submittedAt: '2026-05-01T11:00:00Z' },
-    ];
-
-    const myRaw  = localStorage.getItem('fe_my_offers');
-    const allRaw = localStorage.getItem('fe_all_submitted_offers');
-    const mine: Offer[] = myRaw  ? JSON.parse(myRaw)  : [];
-    const all:  Offer[] = allRaw ? JSON.parse(allRaw) : [];
-
-    // Seeds first (preserving any admin edits stored in localStorage), then non-seed stored, then new member submissions
-    const seedIds = new Set(seedOffers.map(o => o.id));
-    const allIds  = new Set(all.map(o => o.id));
-    const adminEditedSeeds = seedOffers.map(s => all.find(a => a.id === s.id) ?? s);
-    const nonSeedStored    = all.filter(o => !seedIds.has(o.id));
-    const newFromMember    = mine.filter(o => !allIds.has(o.id) && !seedIds.has(o.id));
-    const finalMerged      = [...adminEditedSeeds, ...nonSeedStored, ...newFromMember];
-
-    setOffers(finalMerged);
-    localStorage.setItem('fe_all_submitted_offers', JSON.stringify(finalMerged));
-    persistApprovedOffers(finalMerged);
-  }, [authChecked]);  // eslint-disable-line react-hooks/exhaustive-deps
+    async function loadAdminOffers() {
+      try {
+        const res = await fetch('/api/offers?adminView=true');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: Offer[] = dbData.map((o: any) => ({
+            id: o.id,
+            businessName: o.business_name,
+            businessId: o.business_id,
+            title: o.title,
+            type: o.type,
+            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+            description: o.description,
+            category: o.category,
+            location: o.location || 'Calgary, AB',
+            expiryDate: o.expiry_date,
+            status: o.status.toLowerCase() as any,
+            featured: o.featured || false,
+            submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+            foundersEdgeDiscount: o.fe_discount,
+            eventsPageUrl: o.events_page_url,
+            howToRedeem: o.how_to_redeem
+          }));
+          setOffers(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to load admin offers:", err);
+      }
+    }
+    loadAdminOffers();
+  }, [authChecked]);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   }
 
-  function updateOffer(id: string, changes: Partial<Offer>) {
-    setOffers(prev => {
-      const updated = prev.map(o => o.id === id ? { ...o, ...changes } : o);
-      localStorage.setItem('fe_all_submitted_offers', JSON.stringify(updated));
-      persistApprovedOffers(updated);
-      return updated;
-    });
+  async function approve(id: string) {
+    try {
+      const res = await fetch(`/api/offers/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'approved' })
+      });
+      if (res.ok) {
+        setOffers(prev => prev.map(o => o.id === id ? { ...o, status: 'approved' } : o));
+        showToast('Offer approved ✓');
+      } else {
+        const data = await res.json();
+        alert(`Error approving offer: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  function approve(id: string) {
-    updateOffer(id, { status: 'approved' });
-    showToast('Offer approved ✓');
+  async function reject(id: string) {
+    try {
+      const res = await fetch(`/api/offers/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' })
+      });
+      if (res.ok) {
+        setOffers(prev => prev.map(o => o.id === id ? { ...o, status: 'rejected' } : o));
+        showToast('Offer rejected.');
+      } else {
+        const data = await res.json();
+        alert(`Error rejecting offer: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
-  function reject(id: string) {
-    updateOffer(id, { status: 'rejected' });
-    showToast('Offer rejected.');
-  }
-
-  function toggleFeatured(id: string, current: boolean) {
-    updateOffer(id, { featured: !current });
-    showToast(current ? 'Offer unfeatured.' : 'Offer featured ✓');
+  async function toggleFeatured(id: string, current: boolean) {
+    try {
+      const res = await fetch(`/api/offers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ featured: !current })
+      });
+      if (res.ok) {
+        setOffers(prev => prev.map(o => o.id === id ? { ...o, featured: !current } : o));
+        showToast(!current ? 'Offer featured ✓' : 'Offer unfeatured.');
+      } else {
+        const data = await res.json();
+        alert(`Error featuring offer: ${data.error || 'Unknown error'}`);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
 
   const filtered = offers

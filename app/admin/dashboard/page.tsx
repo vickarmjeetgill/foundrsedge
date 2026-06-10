@@ -91,7 +91,7 @@ function SubmitRow({ editing, onCancel, addLabel }: { editing: boolean; onCancel
 // ─── EVENTS ───────────────────────────────────────────────────────────────────
 const blankEvent = { title: '', date: '', time: '', location: '', category: '', price: '', host: '', desc: '', featured: false, capacity: '', isOnline: false, duration: '', tags: '' };
 
-function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
+function EventsSection({ onSuccess, setConfirmModal }: { onSuccess: (msg: string) => void; setConfirmModal: any }) {
   const [items, setItems] = useState<EventItem[]>([]);
   const [form, setForm] = useState(blankEvent);
   const [errors, setErrors] = useState<Partial<Record<keyof typeof blankEvent, string>>>({});
@@ -326,23 +326,28 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   }
 
   async function handleDelete(id: string | number) {
-    if (confirm('Are you sure you want to permanently delete this event from the database?')) {
-      try {
-        const res = await fetch(`/api/events/${id}`, {
-          method: 'DELETE'
-        });
-        if (res.ok) {
-          setItems(items.filter(i => i.id !== id));
-          onSuccess('Event deleted from database.');
-        } else {
-          const data = await res.json();
-          alert(`Error deleting event: ${data.error || 'Unknown error'}`);
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Event',
+      message: 'Are you sure you want to permanently delete this event from the database?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/events/${id}`, {
+            method: 'DELETE'
+          });
+          if (res.ok) {
+            setItems(items.filter(i => i.id !== id));
+            onSuccess('Event deleted from database.');
+          } else {
+            const data = await res.json();
+            alert(`Error deleting event: ${data.error || 'Unknown error'}`);
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Network error occurred while trying to delete event.');
         }
-      } catch (err) {
-        console.error(err);
-        alert('Network error occurred while trying to delete event.');
       }
-    }
+    });
   }
 
   return (
@@ -367,7 +372,7 @@ function EventsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
             value={form.category}
             onChange={e => set('category', e.target.value)}
           >
-            <option value="">-- Select Category --</option>
+            <option value="">Select Category</option>
             {['Networking', 'Workshop', 'Webinar', 'Supper Club', 'Other'].map(c => <option key={c}>{c}</option>)}
           </select>
           <FormError msg={errors.category} />
@@ -530,7 +535,7 @@ function FormError({ msg }: { msg?: string }) {
 // ─── DIRECTORY ────────────────────────────────────────────────────────────────
 const blankDir = { name: '', industry: 'Technology', location: 'Calgary', desc: '', website: '', tags: '', featured: false, boosted: false };
 
-function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
+function DirectorySection({ onSuccess, setConfirmModal }: { onSuccess: (msg: string) => void; setConfirmModal: any }) {
   const [items, setItems] = useState<DirectoryItem[]>([]);
   const [form, setForm] = useState(blankDir);
   const [editId, setEditId] = useState<string | number | null>(null);
@@ -558,7 +563,15 @@ function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   }
 
   function handleDelete(id: string | number) {
-    if (confirm('Delete this listing?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Listing deleted.'); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Listing',
+      message: 'Are you sure you want to delete this listing?',
+      onConfirm: () => {
+        setItems(items.filter(i => i.id !== id));
+        onSuccess('Listing deleted.');
+      }
+    });
   }
 
   return (
@@ -586,7 +599,7 @@ function DirectorySection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 // ─── RESOURCES ────────────────────────────────────────────────────────────────
 const blankRes = { title: '', category: 'Funding', url: '', tags: '', desc: '', featured: false };
 
-function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
+function ResourcesSection({ onSuccess, setConfirmModal }: { onSuccess: (msg: string) => void; setConfirmModal: any }) {
   const [items, setItems] = useState<ResourceItem[]>([]);
   const [form, setForm] = useState(blankRes);
   const [editId, setEditId] = useState<string | number | null>(null);
@@ -614,7 +627,15 @@ function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   }
 
   function handleDelete(id: string | number) {
-    if (confirm('Delete this resource?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Resource deleted.'); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Resource',
+      message: 'Are you sure you want to delete this resource?',
+      onConfirm: () => {
+        setItems(items.filter(i => i.id !== id));
+        onSuccess('Resource deleted.');
+      }
+    });
   }
 
   return (
@@ -634,48 +655,248 @@ function ResourcesSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 }
 
 // ─── AWARDS ───────────────────────────────────────────────────────────────────
-const blankAward = { name: '', category: '', desc: '', nominationsOpen: false, awardDate: '', sponsor: '' };
+export type Award = {
+  id: string;
+  name: string;
+  org: string;
+  category: string;
+  region: string;
+  deadline: string;
+  awardDate: string;
+  value: string;
+  cycle: string;
+  desc: string;
+  featured: boolean;
+  nominationsOpen: boolean;
+  sponsor?: string;
+};
 
-function AwardsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
-  const [items, setItems] = useState<AwardItem[]>([]);
+const blankAward: Omit<Award, 'id'> = {
+  name: '',
+  org: '',
+  category: '',
+  region: '',
+  deadline: '',
+  awardDate: '',
+  value: '',
+  cycle: '',
+  desc: '',
+  featured: false,
+  nominationsOpen: true,
+  sponsor: '',
+};
+
+function AwardsSection({ onSuccess, setConfirmModal }: { onSuccess: (msg: string) => void; setConfirmModal: any }) {
+  const [items, setItems] = useState<Award[]>([]);
   const [form, setForm] = useState(blankAward);
-  const [editId, setEditId] = useState<string | number | null>(null);
-  const [nextId, setNextId] = useState(1);
+  const [editId, setEditId] = useState<string | null>(null);
   const set = (key: string, value: string | boolean) => setForm(prevForm => ({ ...prevForm, [key]: value }));
 
-  function handleSubmit(e: React.FormEvent) {
+
+  useEffect(() => {
+    async function loadAwards() {
+      try {
+        const res = await fetch('/api/awards');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: Award[] = dbData.map((a: any) => ({
+            ...a,
+            awardDate: a.award_date || a.awardDate || '',
+          }));
+          setItems(mapped);
+        } else {
+          console.error('Failed to load awards from database')
+        }
+      } catch (error) {
+        console.error('Error loading awards:', error);
+      }
+    }
+
+    loadAwards();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (editId !== null) {
-      setItems(items.map(i => i.id === editId ? { ...form, id: editId } : i));
-      onSuccess('Award updated.');
-      setEditId(null);
+      try {
+        const res = await fetch(`/api/awards/${editId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name,
+            org: form.org,
+            category: form.category,
+            region: form.region,
+            deadline: form.deadline,
+            awardDate: form.awardDate,
+            value: form.value,
+            cycle: form.cycle,
+            desc: form.desc,
+            featured: form.featured,
+            nominationsOpen: form.nominationsOpen,
+            sponsor: form.sponsor,
+          }),
+        });
+
+        if (res.ok) {
+          const updatedAward = await res.json();
+          const mapped: Award = {
+            ...updatedAward,
+            awardDate: updatedAward.award_date || updatedAward.awardDate || '',
+          };
+          setItems(items.map(i => i.id === editId ? mapped : i));
+          onSuccess('Award updated.');
+          setEditId(null);
+          setForm(blankAward);
+        } else {
+          alert('Error updating award');
+        }
+      } catch (err) {
+        console.error('Network error updating award:', err);
+      }
     } else {
-      setItems([...items, { ...form, id: nextId }]);
-      setNextId(n => n + 1);
-      onSuccess('Award added.');
+      try {
+        const res = await fetch('/api/awards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name,
+            org: form.org,
+            category: form.category,
+            region: form.region,
+            deadline: form.deadline,
+            awardDate: form.awardDate,
+            value: form.value,
+            cycle: form.cycle,
+            desc: form.desc,
+            featured: form.featured,
+            nominationsOpen: form.nominationsOpen,
+            sponsor: form.sponsor,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          const createdAward = data.award || data;
+          const mapped: Award = {
+            ...createdAward,
+            awardDate: createdAward.award_date || createdAward.awardDate || '',
+          };
+          setItems([...items, mapped]);
+          onSuccess('Award added successfully to database.');
+          setForm(blankAward);
+        } else {
+          alert('Error adding award to database');
+        }
+      } catch (err) {
+        console.error('Network error creating award:', err);
+      }
     }
-    setForm(blankAward);
   }
 
-  function handleEdit(item: AwardItem) {
-    setForm({ name: item.name, category: item.category, desc: item.desc, nominationsOpen: item.nominationsOpen, awardDate: item.awardDate, sponsor: item.sponsor });
+  function handleEdit(item: Award) {
+    setForm({
+      name: item.name,
+      org: item.org,
+      category: item.category,
+      region: item.region,
+      deadline: item.deadline,
+      awardDate: item.awardDate,
+      value: item.value,
+      cycle: item.cycle,
+      desc: item.desc,
+      featured: item.featured,
+      nominationsOpen: item.nominationsOpen,
+      sponsor: item.sponsor ?? '',
+    });
     setEditId(item.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function handleDelete(id: string | number) {
-    if (confirm('Delete this award?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Award deleted.'); }
+  async function handleDelete(id: string | number) {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Award',
+      message: 'Are you sure you want to permanently delete this award?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/awards/${id}`, {
+            method: 'DELETE',
+          });
+
+          if (res.ok) {
+            setItems(items.filter(i => i.id !== id));
+            onSuccess('Award deleted successfully.');
+          } else {
+            alert('Error deleting award from database');
+          }
+        } catch (err) {
+          console.error('Network error deleting award:', err);
+        }
+      }
+    });
   }
 
   return (
     <>
       <form onSubmit={handleSubmit} className="grid-form" style={{ gap: 20 }}>
-        <Field label="Award Name"><input required style={inputStyle} value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. Entrepreneur of the Year" /></Field>
-        <Field label="Category"><input required style={inputStyle} value={form.category} onChange={e => set('category', e.target.value)} placeholder="e.g. Innovation, Leadership" /></Field>
-        <Field label="Award Date"><input style={inputStyle} type="date" value={form.awardDate} onChange={e => set('awardDate', e.target.value)} /></Field>
-        <Field label="Sponsor / Partner"><input style={inputStyle} value={form.sponsor} onChange={e => set('sponsor', e.target.value)} placeholder="e.g. ATB Financial" /></Field>
-        <Field label="Nominations Status"><label style={checkboxRowStyle}><input type="checkbox" checked={form.nominationsOpen} onChange={e => set('nominationsOpen', e.target.checked)} style={{ width: 16, height: 16, accentColor: '#e7b605' }} /> Nominations currently open</label></Field>
-        <div style={{ gridColumn: '1 / -1' }}><Field label="Description"><textarea style={textareaStyle} value={form.desc} onChange={e => set('desc', e.target.value)} placeholder="Describe this award..." /></Field></div>
+        <Field label="Award Name"><input required style={inputStyle} value={form.name || ''} onChange={e => set('name', e.target.value)} placeholder="e.g. Entrepreneur of the Year" /></Field>
+        <Field label="Category">
+          <select
+            required
+            style={inputStyle}
+            value={form.category || ''}
+            onChange={e => set('category', e.target.value)}
+          >
+            <option value="">Select Category</option>
+            {['General Business', 'Technology', 'Women in Business', 'Leadership', 'SMB', 'Media & Content', 'Other'].map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Award Date"><input required style={inputStyle} type="date" value={form.awardDate || ''} onChange={e => set('awardDate', e.target.value)} /></Field>
+        <Field label="Sponsor / Partner"><input style={inputStyle} value={form.sponsor || ''} onChange={e => set('sponsor', e.target.value)} placeholder="e.g. ATB Financial" /></Field>
+        <Field label="Organizer / Presenter"><input required style={inputStyle} value={form.org || ''} onChange={e => set('org', e.target.value)} placeholder="e.g. Founders Edge" /></Field>
+        <Field label="Region">
+          <select
+            required
+            style={inputStyle}
+            value={form.region || ''}
+            onChange={e => set('region', e.target.value)}
+          >
+            <option value="">Select Region</option>
+            {['Calgary', 'Alberta', 'Western Canada', 'National'].map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Nomination Deadline"><input required style={inputStyle} type="date" value={form.deadline || ''} onChange={e => set('deadline', e.target.value)} /></Field>
+        <Field label="Prize value"><input required style={inputStyle} value={form.value || ''} onChange={e => set('value', e.target.value)} placeholder="e.g. Prestige, $5,000 Grant, Trophy" /></Field>
+        <Field label="Cycle / Frequency"><input required style={inputStyle} value={form.cycle || ''} onChange={e => set('cycle', e.target.value)} placeholder="e.g. Annual, Monthly, One-time" /></Field>
+
+        <Field label="Award Options">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={checkboxRowStyle}>
+              <input
+                type="checkbox"
+                checked={!!form.nominationsOpen}
+                onChange={e => set('nominationsOpen', e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#e7b605' }}
+              />
+              Nominations currently open
+            </label>
+            <label style={checkboxRowStyle}>
+              <input
+                type="checkbox"
+                checked={!!form.featured}
+                onChange={e => set('featured', e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: '#e7b605' }}
+              />
+              Featured award
+            </label>
+          </div>
+        </Field>
+        <div style={{ gridColumn: '1 / -1' }}><Field label="Description"><textarea style={textareaStyle} value={form.desc || ''} onChange={e => set('desc', e.target.value)} placeholder="Describe this award..." /></Field></div>
         <SubmitRow editing={editId !== null} onCancel={() => { setEditId(null); setForm(blankAward); }} addLabel="Add Award" />
       </form>
       <ItemTable items={items} columns={['Award', 'Category', 'Nominations', 'Sponsor']} getRow={i => [i.name, i.category, i.nominationsOpen ? 'Open' : 'Closed', i.sponsor || '—']} onEdit={handleEdit} onDelete={handleDelete} />
@@ -686,7 +907,7 @@ function AwardsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 // ─── WEBINARS ─────────────────────────────────────────────────────────────────
 const blankWebinar = { title: '', speaker: '', speakerRole: '', date: '', time: '', duration: '', category: 'Sales', desc: '' };
 
-function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
+function WebinarsSection({ onSuccess, setConfirmModal }: { onSuccess: (msg: string) => void; setConfirmModal: any }) {
   const [items, setItems] = useState<WebinarItem[]>([]);
   const [form, setForm] = useState(blankWebinar);
   const [editId, setEditId] = useState<string | number | null>(null);
@@ -714,7 +935,15 @@ function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
   }
 
   function handleDelete(id: string | number) {
-    if (confirm('Delete this webinar?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Webinar deleted.'); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Webinar',
+      message: 'Are you sure you want to delete this webinar?',
+      onConfirm: () => {
+        setItems(items.filter(i => i.id !== id));
+        onSuccess('Webinar deleted.');
+      }
+    });
   }
 
   return (
@@ -738,7 +967,7 @@ function WebinarsSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
 // ─── SUPPER CLUB ──────────────────────────────────────────────────────────────
 const blankSC = { title: '', date: '', time: '', location: '', capacity: '', desc: '', inviteOnly: true };
 
-function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) {
+function SupperClubSection({ onSuccess, setConfirmModal }: { onSuccess: (msg: string) => void; setConfirmModal: any }) {
   const [items, setItems] = useState<SupperClubItem[]>([]);
   const [form, setForm] = useState(blankSC);
   const [editId, setEditId] = useState<string | number | null>(null);
@@ -766,7 +995,15 @@ function SupperClubSection({ onSuccess }: { onSuccess: (msg: string) => void }) 
   }
 
   function handleDelete(id: string | number) {
-    if (confirm('Delete this supper club event?')) { setItems(items.filter(i => i.id !== id)); onSuccess('Event deleted.'); }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Supper Club Event',
+      message: 'Are you sure you want to delete this supper club event?',
+      onConfirm: () => {
+        setItems(items.filter(i => i.id !== id));
+        onSuccess('Event deleted.');
+      }
+    });
   }
 
   return (
@@ -836,24 +1073,24 @@ export default function AdminDashboard() {
   const router = useRouter();
   const [checkingAccess, setCheckingAccess] = useState(true);
   useEffect(() => {
-  const checkAdminAccess = async () => {
-    const res = await getProfile();
+    const checkAdminAccess = async () => {
+      const res = await getProfile();
 
-    if (!res.success || !res.user) {
-      router.push('/login');
-      return;
-    }
+      if (!res.success || !res.user) {
+        router.push('/login');
+        return;
+      }
 
-    if ((res.user as any).role !== 'ADMIN') {
-      router.push('/dashboard');
-      return;
-    }
+      if ((res.user as any).role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
+      }
 
-    setCheckingAccess(false);
-  };
+      setCheckingAccess(false);
+    };
 
-  checkAdminAccess();
-}, [router]);
+    checkAdminAccess();
+  }, [router]);
   useEffect(() => {
     const checkAdminAccess = async () => {
       const res = await getProfile();
@@ -874,6 +1111,17 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<Tab>('events');
   // Store toast/success messages to display banner feedback to the admin
   const [successMsg, setSuccessMsg] = useState('');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Handle administrator log out and clear admin sessions
   async function handleLogout() {
@@ -890,22 +1138,22 @@ export default function AdminDashboard() {
   const activeTabData = tabs.find(t => t.id === activeTab)!;
 
   if (checkingAccess) {
-  return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#000',
-      color: '#e7b605',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: 'DM Sans, sans-serif',
-      fontWeight: 800,
-      fontSize: '18px'
-    }}>
-      Checking admin access...
-    </div>
-  );
-}
+    return (
+      <div style={{
+        minHeight: '100vh',
+        background: '#000',
+        color: '#e7b605',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'DM Sans, sans-serif',
+        fontWeight: 800,
+        fontSize: '18px'
+      }}>
+        Checking admin access...
+      </div>
+    );
+  }
   return (
     <div style={{ minHeight: '100vh', background: '#f9f9f7', color: '#111' }}>
       {/* Top Bar */}
@@ -984,14 +1232,95 @@ export default function AdminDashboard() {
 
           {successMsg && <SuccessBanner message={successMsg} onClose={() => setSuccessMsg('')} />}
 
-          {activeTab === 'events' && <EventsSection onSuccess={showSuccess} />}
-          {activeTab === 'directory' && <DirectorySection onSuccess={showSuccess} />}
-          {activeTab === 'resources' && <ResourcesSection onSuccess={showSuccess} />}
-          {activeTab === 'awards' && <AwardsSection onSuccess={showSuccess} />}
-          {activeTab === 'webinars' && <WebinarsSection onSuccess={showSuccess} />}
-          {activeTab === 'supperclub' && <SupperClubSection onSuccess={showSuccess} />}
+          {activeTab === 'events' && <EventsSection onSuccess={showSuccess} setConfirmModal={setConfirmModal} />}
+          {activeTab === 'directory' && <DirectorySection onSuccess={showSuccess} setConfirmModal={setConfirmModal} />}
+          {activeTab === 'resources' && <ResourcesSection onSuccess={showSuccess} setConfirmModal={setConfirmModal} />}
+          {activeTab === 'awards' && <AwardsSection onSuccess={showSuccess} setConfirmModal={setConfirmModal} />}
+          {activeTab === 'webinars' && <WebinarsSection onSuccess={showSuccess} setConfirmModal={setConfirmModal} />}
+          {activeTab === 'supperclub' && <SupperClubSection onSuccess={showSuccess} setConfirmModal={setConfirmModal} />}
         </div>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: '#fff',
+            border: '1px solid #e2e0d8',
+            padding: '32px',
+            maxWidth: '440px',
+            width: '90%',
+            textAlign: 'center',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+          }}>
+            <h3 style={{
+              fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 800,
+              fontSize: '20px',
+              color: '#2a2820',
+              marginBottom: '12px'
+            }}>
+              {confirmModal.title}
+            </h3>
+            <p style={{
+              fontFamily: 'Noto Serif, serif',
+              color: '#5a5650',
+              fontSize: '14px',
+              lineHeight: 1.6,
+              marginBottom: '24px'
+            }}>
+              {confirmModal.message}
+            </p>
+            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <button
+                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+                style={{
+                  padding: '10px 20px',
+                  border: '1px solid #e2e0d8',
+                  background: 'transparent',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  color: '#5a5650'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                }}
+                style={{
+                  padding: '10px 20px',
+                  border: '1px solid #c0392b',
+                  background: '#c0392b',
+                  fontFamily: 'DM Sans, sans-serif',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  color: '#fff'
+                }}
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

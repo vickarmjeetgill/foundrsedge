@@ -42,16 +42,22 @@ export default function AwardsPage() {
   const [awards, setAwards]           = useState<Award[]>(seedAwards);
 
   useEffect(() => {
-    // Merge admin-created awards with seeds
-    const raw = localStorage.getItem('fe_admin_awards');
-    if (raw) {
+    async function loadAwards() {
       try {
-        const adminAwards: Award[] = JSON.parse(raw);
-        const seedIds = new Set(seedAwards.map(a => a.id));
-        const newOnes = adminAwards.filter(a => !seedIds.has(a.id));
-        setAwards([...seedAwards, ...newOnes]);
-      } catch {}
+        const res = await fetch('/api/awards');
+        if (res.ok) {
+          const dbData = await res.json();
+          const mapped: Award[] = dbData.map((a: any) => ({
+            ...a,
+            awardDate: a.award_date || a.awardDate || '',
+          }));
+          setAwards(mapped);
+        }
+      } catch (error) {
+        console.error('Error fetching awards:', error);
+      }
     }
+    loadAwards();
   }, []);
 
   const filtered = awards.filter(a => {

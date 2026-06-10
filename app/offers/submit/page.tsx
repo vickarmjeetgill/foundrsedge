@@ -97,78 +97,56 @@ function OfferSubmitContent() {
   const [isEditing, setIsEditing] = useState(false);
   const [offerCount, setOfferCount] = useState(0);
 
-  // Pre-fill form when editing
+  // Pre-fill form when editing and load offer count
   useEffect(() => {
-    const raw = localStorage.getItem('fe_my_offers');
-    const all: Offer[] = raw ? JSON.parse(raw) : [];
-    setOfferCount(all.filter(o => o.status !== 'rejected').length);
+    async function loadFormContext() {
+      try {
+        const countRes = await fetch('/api/offers?mySubmissions=true');
+        if (countRes.ok) {
+          const list = await countRes.json();
+          setOfferCount(list.filter((o: any) => o.status !== 'rejected').length);
+        }
 
-    if (!editId) return;
-    const found = all.find(o => o.id === editId);
-    if (!found) return;
+        if (!editId) return;
 
-    setIsEditing(true);
+        const editRes = await fetch(`/api/offers/${editId}`);
+        if (editRes.ok) {
+          const found = await editRes.json();
+          setIsEditing(true);
 
-    // Reverse-engineer form fields from stored offer
-    let type: OfferType = found.type;
-    let discountValue = '';
-    let customDiscount = '';
+          let type: OfferType = found.type;
+          let discountValue = '';
+          let customDiscount = '';
 
-    if (type === 'percentage') discountValue = found.discount.replace('% off', '').trim();
-    else if (type === 'fixed') discountValue = found.discount.replace('$', '').replace(' off', '').trim();
-    else if (type === 'custom') customDiscount = found.discount;
+          const discountStr = found.type === 'percentage' ? `${found.discount_value}% off` : found.type === 'fixed' ? `$${found.discount_value} off` : found.type === 'bogo' ? 'Buy 1 Get 1 Free' : found.discount_value || found.fe_discount || 'Special Offer';
 
-    setForm({
-      businessName: found.businessName,
-      title: found.title,
-      type,
-      discountValue,
-      discountUnit: '% off',
-      customDiscount,
-      description: found.description,
-      category: found.category,
-      location: found.location || '',
-      expiryDate: found.expiryDate || '',
-      foundersEdgeDiscount: found.foundersEdgeDiscount || '',
-      eventsPageUrl: found.eventsPageUrl || '',
-      howToRedeem: found.howToRedeem || '',
-      agreeGuidelines: true,
-    });
-  }, [editId]);
+          if (type === 'percentage') discountValue = discountStr.replace('% off', '').trim();
+          else if (type === 'fixed') discountValue = discountStr.replace('$', '').replace(' off', '').trim();
+          else if (type === 'custom') customDiscount = discountStr;
 
-  function saveToLocalStorage(formData: FormData, offerId?: string) {
-    const raw = localStorage.getItem('fe_my_offers');
-    const existing: Offer[] = raw ? JSON.parse(raw) : [];
-    const discount = buildDiscount(formData);
-
-    if (isEditing && offerId) {
-      const updated = existing.map(o =>
-        o.id === offerId
-          ? { ...o, businessName: formData.businessName, title: formData.title, type: formData.type, discount, description: formData.description, category: formData.category, location: formData.location, expiryDate: formData.expiryDate, foundersEdgeDiscount: formData.foundersEdgeDiscount || undefined, eventsPageUrl: formData.eventsPageUrl || undefined, howToRedeem: formData.howToRedeem, status: 'pending' as const, updatedAt: new Date().toISOString() }
-          : o
-      );
-      localStorage.setItem('fe_my_offers', JSON.stringify(updated));
-    } else {
-      const newOffer: Offer = {
-        id: `offer_${Date.now()}`,
-        businessName: formData.businessName,
-        title: formData.title,
-        type: formData.type,
-        discount,
-        description: formData.description,
-        category: formData.category,
-        location: formData.location,
-        expiryDate: formData.expiryDate,
-        foundersEdgeDiscount: formData.foundersEdgeDiscount || undefined,
-        eventsPageUrl: formData.eventsPageUrl || undefined,
-        howToRedeem: formData.howToRedeem,
-        status: 'pending',
-        featured: false,
-        submittedAt: new Date().toISOString(),
-      };
-      localStorage.setItem('fe_my_offers', JSON.stringify([...existing, newOffer]));
+          setForm({
+            businessName: found.business_name,
+            title: found.title,
+            type,
+            discountValue,
+            discountUnit: '% off',
+            customDiscount,
+            description: found.description,
+            category: found.category,
+            location: found.location || '',
+            expiryDate: found.expiry_date ? found.expiry_date.split('T')[0] : '',
+            foundersEdgeDiscount: found.fe_discount || '',
+            eventsPageUrl: found.events_page_url || '',
+            howToRedeem: found.how_to_redeem || '',
+            agreeGuidelines: true,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to load edit context:", err);
+      }
     }
-  }
+    loadFormContext();
+  }, [editId]);
 
   function handleChange(field: keyof FormData, value: string | boolean) {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -180,8 +158,11 @@ function OfferSubmitContent() {
     const errs = validateForm(form);
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
 
-    const response = await fetch('/api/offers', {
-      method: 'POST',
+    const url = isEditing ? `/api/offers/${editId}` : '/api/offers';
+    const method = isEditing ? 'PUT' : 'POST';
+
+    const response = await fetch(url, {
+      method: method,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -189,13 +170,11 @@ function OfferSubmitContent() {
     });
 
     if (response.ok) {
-      saveToLocalStorage(form, editId || undefined);
       setSubmitted(true);
     } else {
       const result = await response.json().catch(() => ({}));
-      alert(result.error || 'Failed to create offer');
+      alert(result.error || `Failed to ${isEditing ? 'update' : 'create'} offer`);
     }
-
   }
 
   // ── Success screen ──────────────────────────────────────────────

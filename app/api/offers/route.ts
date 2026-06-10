@@ -9,26 +9,59 @@ export async function GET(request: NextRequest) {
         const category = searchParams.get('category');
         const type = searchParams.get('type');
         const featured = searchParams.get('featured');
+        const adminView = searchParams.get('adminView') === 'true';
+        const mySubmissions = searchParams.get('mySubmissions') === 'true';
+
+        const andConditions: any[] = [];
+
+        if (adminView) {
+            const user = await getCurrentUser();
+            if (!user || user.role !== 'ADMIN') {
+                return NextResponse.json({ error: 'Forbidden: Admin access required' }, { status: 403 });
+            }
+            const statusParam = searchParams.get('status');
+            if (statusParam) {
+                andConditions.push({ status: statusParam });
+            }
+        } else if (mySubmissions) {
+            const user = await getCurrentUser();
+            if (!user) {
+                return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+            const member = await prisma.members.findUnique({
+                where: { email: user.email },
+            });
+            const memberId = member ? member.id : null;
+            if (memberId) {
+                andConditions.push({ member_id: memberId });
+            } else {
+                return NextResponse.json([]);
+            }
+        } else {
+            andConditions.push({ status: 'approved' });
+        }
+
+        if (category && category !== 'All Categories' && category !== 'All') {
+            andConditions.push({ category });
+        }
+
+        if (type && type !== 'All Types' && type !== 'All') {
+            andConditions.push({ type });
+        }
+
+        if (featured === 'true') {
+            andConditions.push({
+                OR: [
+                    { featured: true },
+                    { fe_discount: { not: null } }
+                ]
+            });
+        }
+
+        const where = andConditions.length > 0 ? { AND: andConditions } : {};
 
         const offers = await (prisma as any).offers.findMany({
-            where: {
-                status: 'approved',
-
-                ...(category && {
-                    category,
-                }),
-
-                ...(type && {
-                    type,
-                }),
-
-                ...(featured === 'true' && {
-                    fe_discount: {
-                        not: null,
-                    },
-                }),
-            },
-
+            where,
             orderBy: {
                 created_at: 'desc',
             },
