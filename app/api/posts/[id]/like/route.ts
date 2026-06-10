@@ -9,7 +9,7 @@ export async function POST(
     const { id } = await params;
     const body = await request.json();
 
-    const likedBy = body.likedBy || 'Member';
+    const userIdentifier = body.userIdentifier || body.likedBy || 'Member';
 
     const post = await (prisma as any).posts.findUnique({
       where: { id },
@@ -22,17 +22,53 @@ export async function POST(
       );
     }
 
+    const existingLike = await (prisma as any).post_likes.findUnique({
+      where: {
+        post_id_user_identifier: {
+          post_id: id,
+          user_identifier: userIdentifier,
+        },
+      },
+    });
+
+    if (existingLike) {
+      await (prisma as any).post_likes.delete({
+        where: { id: existingLike.id },
+      });
+
+      const updatedPost = await (prisma as any).posts.update({
+        where: { id },
+        data: {
+          like_count: Math.max((post.like_count || 0) - 1, 0),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        liked: false,
+        message: 'Like removed.',
+        post: updatedPost,
+      });
+    }
+
+    await (prisma as any).post_likes.create({
+      data: {
+        post_id: id,
+        user_identifier: userIdentifier,
+      },
+    });
+
     const updatedPost = await (prisma as any).posts.update({
       where: { id },
       data: {
-        like_count: post.like_count + 1,
+        like_count: (post.like_count || 0) + 1,
       },
     });
 
     await (prisma as any).notifications.create({
       data: {
         type: 'like',
-        message: `${likedBy} liked your post.`,
+        message: `${userIdentifier} liked your post.`,
         post_id: id,
         read: false,
       },
@@ -40,19 +76,21 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
+      liked: true,
       message: 'Like added and notification created.',
       post: updatedPost,
     });
   } catch (error: any) {
-    console.error('Failed to like post:', error);
+    console.error('Failed to toggle like:', error);
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to like post',
+        error: 'Failed to toggle like',
         details: error?.message || '',
       },
       { status: 500 }
     );
   }
 }
+
