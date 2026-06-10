@@ -22,17 +22,18 @@ export async function POST(
       );
     }
 
-    const existingLike = await (prisma as any).post_likes.findUnique({
+    const existingLike = await (prisma as any).likes.findUnique({
       where: {
-        post_id_user_identifier: {
-          post_id: id,
+        target_type_target_id_user_identifier: {
+          target_type: 'post',
+          target_id: id,
           user_identifier: userIdentifier,
         },
       },
     });
 
     if (existingLike) {
-      await (prisma as any).post_likes.delete({
+      await (prisma as any).likes.delete({
         where: { id: existingLike.id },
       });
 
@@ -51,9 +52,10 @@ export async function POST(
       });
     }
 
-    await (prisma as any).post_likes.create({
+    await (prisma as any).likes.create({
       data: {
-        post_id: id,
+        target_type: 'post',
+        target_id: id,
         user_identifier: userIdentifier,
       },
     });
