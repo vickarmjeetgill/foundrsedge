@@ -92,7 +92,7 @@ export default function AdminEventsPage() {
             duration: e.duration || "2 Hours",
             capacity: e.capacity || 50,
             price: e.price,
-            submittedDate: new Date(e.created_At || Date.now()).toLocaleDateString(),
+            submittedDate: new Date(e.created_at || Date.now()).toLocaleDateString(),
             status: e.status.toLowerCase() as EventStatus,
             featured: e.featured || false,
             isOnline: e.location ? (

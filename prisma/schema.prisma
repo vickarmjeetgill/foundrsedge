@@ -93,7 +93,7 @@ model events {
   featured    Boolean     @default(false)
   status      EventStatus @default(PENDING)
   member_id   String?     @db.Uuid
-  created_At  DateTime?   @default(now()) @db.Timestamptz(6)
+  created_at  DateTime?   @default(now()) @db.Timestamptz(6)
   updated_at  DateTime?   @db.Timestamptz(6)
   tags        String[]    @default([])
   capacity    Int         @default(50)

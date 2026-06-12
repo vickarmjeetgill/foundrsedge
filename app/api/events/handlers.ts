@@ -127,7 +127,7 @@ export async function getEvents(request: Request) {
       where,
       orderBy: [
         { featured: "desc" },
-        { created_At: "desc" }
+        { created_at: "desc" }
       ]
     })
     return NextResponse.json(eventsList, { status: 200 })
