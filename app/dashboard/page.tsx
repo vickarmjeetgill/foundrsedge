@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import FeedSection from './FeedSection';
 import NotificationBell from './NotificationBell';
+import { computeProfileCompletion } from './profile-completion';
 import type { Nomination } from '@/app/awards/nominate/page';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
@@ -21,8 +22,9 @@ const defaultMember = {
   name: 'Loading User',
   business: 'Loading Business',
   industry: 'Member',
+  stage: '',
   joined: 'May 2026',
-  profileCompletion: 85,
+  profileCompletion: 0,
 };
 
 const recommendations = {
@@ -42,8 +44,8 @@ const recommendations = {
 
 // Nav items: `section` = stay on dashboard and switch view; `href` = navigate away
 const navItems: { icon: React.ElementType; label: string; section?: Section; href?: string }[] = [
-  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
   { icon: Rss, label: 'Feed', section: 'feed' },
+  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
   { icon: Calendar, label: 'Events', section: 'events' },
   { icon: Tag, label: 'Offers', section: 'offers' },
   { icon: Trophy, label: 'Awards', section: 'awards' },
@@ -570,7 +572,7 @@ function OwnersSection({ memberName, memberBusiness, setConfirmModal }: { member
 }
 
 export default function DashboardPage() {
-  const [activeSection, setActiveSection] = useState<Section>('dashboard');
+  const [activeSection, setActiveSection] = useState<Section>('feed');
   const [member, setMember] = useState(defaultMember);
   const [userProfile, setUserProfile] = useState<any>(null);
   const isAdmin = userProfile?.role === 'ADMIN';
@@ -637,17 +639,27 @@ export default function DashboardPage() {
           ? data.businesses[0]
           : data.businesses;
 
+        const fullName = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName;
+        const industry = data.industry ?? businessData?.business_type ?? 'Member';
+
         setMember({
-          name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
+          name: fullName,
           business: businessData?.business_name ?? 'Founders Edge Member',
-          industry: data.industry ?? businessData?.business_type ?? 'Member',
+          industry,
+          stage: data.stage ?? '',
           joined: data.created_at
             ? new Date(data.created_at).toLocaleDateString('en-US', {
               month: 'short',
               year: 'numeric',
             })
             : 'May 2026',
-          profileCompletion: 85,
+          profileCompletion: computeProfileCompletion({
+            name: fullName,
+            email: userEmail,
+            industry,
+            stage: data.stage,
+            avatarUrl: loggedInUser.avatarUrl,
+          }).percent,
         });
 
         await loadSubmissions(data.id);
@@ -659,6 +671,11 @@ export default function DashboardPage() {
         name: userName,
         business: 'Founders Edge Member',
         industry: 'Member',
+        profileCompletion: computeProfileCompletion({
+          name: userName,
+          email: userEmail,
+          avatarUrl: loggedInUser.avatarUrl,
+        }).percent,
       }));
 
       await loadSubmissions();
@@ -750,6 +767,21 @@ export default function DashboardPage() {
     loadOffers();
     loadNominations();
   }, []);
+
+  // Recompute profile completion when switching sections (picks up business/owner
+  // profile edits made in the Business/Owners tabs without needing a reload).
+  useEffect(() => {
+    setMember(prev => ({
+      ...prev,
+      profileCompletion: computeProfileCompletion({
+        name: prev.name,
+        email: userProfile?.email,
+        industry: prev.industry,
+        stage: prev.stage,
+        avatarUrl: userProfile?.avatarUrl,
+      }).percent,
+    }));
+  }, [activeSection, userProfile]);
 
   async function deleteSubmission(id: string) {
     try {
@@ -1353,7 +1385,7 @@ export default function DashboardPage() {
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e0d8', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
           <div>
             <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px' }}>
-              {activeSection === 'dashboard' ? `Good morning, ${member.name.split(' ')[0]} 👋` : sectionTitles[activeSection]}
+              {(activeSection === 'dashboard' || activeSection === 'feed') ? `Good morning, ${member.name.split(' ')[0]} 👋` : sectionTitles[activeSection]}
             </h1>
             <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined}</div>
           </div>
@@ -1371,7 +1403,7 @@ export default function DashboardPage() {
 
         {/* Section content */}
         {activeSection === 'dashboard' && <DashboardSection />}
-        {activeSection === 'feed' && <FeedSection memberName={member.name} memberBusiness={member.business} />}
+        {activeSection === 'feed' && <FeedSection memberName={member.name} memberBusiness={member.business} basics={{ email: userProfile?.email, industry: member.industry, stage: member.stage, avatarUrl: userProfile?.avatarUrl }} />}
         {activeSection === 'events' && <EventsSection />}
         {activeSection === 'offers' && <OffersSection />}
         {activeSection === 'awards' && <AwardsSection />}

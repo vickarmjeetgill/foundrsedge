@@ -6,6 +6,7 @@ import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
 import { logout } from '@/app/actions/auth';
 import { getProfile, updateProfile } from '@/app/actions/profile';
+import { computeProfileCompletion } from '../profile-completion';
 
 const defaultMember = {
   name: '',
@@ -81,18 +82,27 @@ export default function SettingsPage() {
             ? data.businesses[0]
             : data.businesses;
 
+          const fullName = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName;
+          const industry = data.industry ?? businessData?.business_type ?? 'Member';
+
           setMember({
-            name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
+            name: fullName,
             business: businessData?.business_name ?? 'Founders Edge Member',
             stage: data.stage ?? 'N/A',
-            industry: data.industry ?? businessData?.business_type ?? 'Member',
+            industry,
             joined: data.created_at
               ? new Date(data.created_at).toLocaleDateString('en-US', {
                 month: 'short',
                 year: 'numeric',
               })
               : 'N/A',
-            profileCompletion: 90,
+            profileCompletion: computeProfileCompletion({
+              name: fullName,
+              email: userEmail,
+              industry,
+              stage: data.stage,
+              avatarUrl: profileRes.user?.avatarUrl,
+            }).percent,
           });
         } else {
           setMember(prev => ({
@@ -125,7 +135,10 @@ export default function SettingsPage() {
       setUserProfile(res.user);
       setMember(prev => ({
         ...prev,
-        name: res.user.name || name
+        name: res.user.name || name,
+        profileCompletion: computeProfileCompletion({
+          name: res.user.name || name, email, industry: prev.industry, stage: prev.stage, avatarUrl: res.user.avatarUrl ?? userProfile?.avatarUrl,
+        }).percent,
       }));
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       // Clear message after 3 seconds
@@ -172,6 +185,12 @@ export default function SettingsPage() {
 
       if (response.ok && data.success) {
         setUserProfile((prev: any) => ({ ...prev, avatarUrl: data.url }));
+        setMember(prev => ({
+          ...prev,
+          profileCompletion: computeProfileCompletion({
+            name: prev.name, email, industry: prev.industry, stage: prev.stage, avatarUrl: data.url,
+          }).percent,
+        }));
         setMessage({ type: 'success', text: 'Profile picture updated successfully!' });
         setTimeout(() => setMessage(null), 3000);
       } else {
