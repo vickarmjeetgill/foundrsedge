@@ -40,11 +40,22 @@ export default function PostComposer({ currentUserName, currentUserBusiness, onP
  useEffect(() => {
   async function loadLinkedContent() {
     try {
-      const eventsRes = await fetch('/api/events?mySubmissions=true');
-      if (eventsRes.ok) {
-        const eventsData = await eventsRes.json();
-        setEvents(eventsData || []);
-      }
+    const eventsRes = await fetch('/api/events?adminView=true');
+if (eventsRes.ok) {
+  const eventsData = await eventsRes.json();
+
+  const approvedEvents = (eventsData || [])
+    .filter((event: any) => event.status?.toLowerCase() === 'approved')
+    .map((event: any) => ({
+      id: event.id,
+      title: event.title,
+      category: event.category,
+      date: event.date,
+      location: event.location,
+    }));
+
+  setEvents(approvedEvents);
+}
     } catch (err) {
       console.error('Failed to load events for composer:', err);
     }
@@ -269,7 +280,12 @@ export default function PostComposer({ currentUserName, currentUserBusiness, onP
                     </div>
                   ) : (
                     events.map(ev => (
-                      <button key={ev.id} onClick={() => { setLinked({ type: 'event', title: ev.title, subtitle: ev.category, url: '/events' }); setPickerType(null); }} style={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', borderBottom: '1px solid #f0efe9', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+                      <button key={ev.id} onClick={() => { setLinked({
+  type: 'event',
+  title: ev.title,
+  subtitle: `${ev.category}${ev.date ? ` · ${ev.date}` : ''}`,
+  url: `/events/${ev.id}`,
+}); setPickerType(null); }} style={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', borderBottom: '1px solid #f0efe9', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#f9f9f7'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
