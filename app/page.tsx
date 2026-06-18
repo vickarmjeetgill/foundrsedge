@@ -35,23 +35,6 @@ export default function Home() {
 
       {/* Hero */}
       <section style={{ background: '#000', minHeight: '100vh', display: 'flex', alignItems: 'center', position: 'relative', overflow: 'hidden', paddingTop: 72 }}>
-        {/* Geometric background */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', right: -100, top: '10%', width: 600, height: 600, background: 'radial-gradient(circle, rgba(231,182,5,0.08) 0%, transparent 70%)', borderRadius: '50%' }} />
-          <div style={{ position: 'absolute', left: -200, bottom: '10%', width: 500, height: 500, background: 'radial-gradient(circle, rgba(155,112,17,0.06) 0%, transparent 70%)', borderRadius: '50%' }} />
-          {/* Grid lines */}
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.04 }} preserveAspectRatio="none">
-            <defs>
-              <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#e7b605" strokeWidth="1"/>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-          {/* Large F icon watermark */}
-          <div style={{ position: 'absolute', right: '5%', top: '50%', transform: 'translateY(-50%)', opacity: 0.04, fontSize: 400, fontWeight: 900, fontFamily: 'DM Sans, sans-serif', color: '#e7b605', lineHeight: 1, userSelect: 'none' }}>F</div>
-        </div>
-
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: 80, paddingBottom: 100 }}>
           <div style={{ maxWidth: 760 }}>
             <div className="section-label" style={{ color: '#e7b605' }}>

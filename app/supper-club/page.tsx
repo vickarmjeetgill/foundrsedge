@@ -10,7 +10,6 @@ export default function SupperClubPage() {
     <PageLayout>
       {/* Hero - dark, intimate feel */}
       <div style={{ background: '#000', minHeight: '70vh', display: 'flex', alignItems: 'center', paddingTop: 72, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 70% 50%, rgba(155,112,17,0.15) 0%, transparent 60%)', pointerEvents: 'none' }} />
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: 80, paddingBottom: 80 }}>
           <div className="section-label" style={{ color: '#e7b605' }}>Exclusive Experience</div>
           <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(40px, 6vw, 80px)', color: '#fff', letterSpacing: '-0.02em', lineHeight: 1.0, marginBottom: 24 }}>
