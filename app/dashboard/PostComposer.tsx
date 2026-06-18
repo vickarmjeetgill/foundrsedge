@@ -37,12 +37,49 @@ export default function PostComposer({ currentUserName, currentUserBusiness, onP
   const pickerRef                     = useRef<HTMLDivElement>(null);
   const fileRef                       = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const evRaw = localStorage.getItem('fe_my_submissions');
-    if (evRaw) { try { setEvents(JSON.parse(evRaw)); } catch {} }
-    const offRaw = localStorage.getItem('fe_approved_offers');
-    if (offRaw) { try { setOffers(JSON.parse(offRaw)); } catch {} }
-  }, []);
+ useEffect(() => {
+  async function loadLinkedContent() {
+    try {
+      const eventsRes = await fetch('/api/events?mySubmissions=true');
+      if (eventsRes.ok) {
+        const eventsData = await eventsRes.json();
+        setEvents(eventsData || []);
+      }
+    } catch (err) {
+      console.error('Failed to load events for composer:', err);
+    }
+
+    try {
+      const offersRes = await fetch('/api/offers');
+      if (offersRes.ok) {
+        const offersData = await offersRes.json();
+
+        const approvedOffers = (offersData || [])
+          .filter((offer: any) => offer.status?.toLowerCase() === 'approved')
+          .map((offer: any) => ({
+            id: offer.id,
+            title: offer.title,
+            businessName: offer.business_name,
+            discount:
+              offer.type === 'percentage'
+                ? `${offer.discount_value}% off`
+                : offer.type === 'fixed'
+                  ? `$${offer.discount_value} off`
+                  : offer.type === 'bogo'
+                    ? 'Buy 1 Get 1 Free'
+                    : offer.discount_value || offer.fe_discount || 'Special Offer',
+            category: offer.category,
+          }));
+
+        setOffers(approvedOffers);
+      }
+    } catch (err) {
+      console.error('Failed to load offers for composer:', err);
+    }
+  }
+
+  loadLinkedContent();
+}, []);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -248,7 +285,7 @@ export default function PostComposer({ currentUserName, currentUserBusiness, onP
                     </div>
                   ) : (
                     offers.map(off => (
-                      <button key={off.id} onClick={() => { setLinked({ type: 'offer', title: off.title, subtitle: `${off.discount} · ${off.businessName}`, url: '/offers' }); setPickerType(null); }} style={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', borderBottom: '1px solid #f0efe9', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+                      <button key={off.id} onClick={() => { setLinked({ type: 'offer', title: off.title, subtitle: `${off.discount} · ${off.businessName}`, url: `/offers/${off.id}`}); setPickerType(null); }} style={{ display: 'block', width: '100%', padding: '12px 16px', border: 'none', borderBottom: '1px solid #f0efe9', background: 'transparent', textAlign: 'left', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#f9f9f7'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                       >
