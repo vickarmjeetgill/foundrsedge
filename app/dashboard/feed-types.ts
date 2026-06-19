@@ -5,6 +5,9 @@ export type Post = {
   authorName: string;
   authorBusiness: string;
   content: string;
+  imageUrl?: string;        // pasted URL or base64 data URL
+  externalUrl?: string;     // generic outbound link
+  externalTitle?: string;   // link title / domain
   linkedType?: 'event' | 'offer';
   linkedTitle?: string;
   linkedSubtitle?: string;

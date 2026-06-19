@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import FeedSection from './FeedSection';
 import NotificationBell from './NotificationBell';
+import { computeProfileCompletion } from './profile-completion';
 import type { Nomination } from '@/app/awards/nominate/page';
 import Logo from '@/components/Logo';
 import { supabase } from '@/lib/supabase';
@@ -21,8 +22,9 @@ const defaultMember = {
   name: 'Loading User',
   business: 'Loading Business',
   industry: 'Member',
+  stage: '',
   joined: 'May 2026',
-  profileCompletion: 85,
+  profileCompletion: 0,
 };
 
 const recommendations = {
@@ -42,8 +44,8 @@ const recommendations = {
 
 // Nav items: `section` = stay on dashboard and switch view; `href` = navigate away
 const navItems: { icon: React.ElementType; label: string; section?: Section; href?: string }[] = [
-  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
   { icon: Rss, label: 'Feed', section: 'feed' },
+  { icon: TrendingUp, label: 'Dashboard', section: 'dashboard' },
   { icon: Calendar, label: 'Events', section: 'events' },
   { icon: Tag, label: 'Offers', section: 'offers' },
   { icon: Trophy, label: 'Awards', section: 'awards' },
@@ -570,7 +572,7 @@ function OwnersSection({ memberName, memberBusiness, setConfirmModal }: { member
 }
 
 export default function DashboardPage() {
-  const [activeSection, setActiveSection] = useState<Section>('dashboard');
+  const [activeSection, setActiveSection] = useState<Section>('feed');
   const [member, setMember] = useState(defaultMember);
   const [userProfile, setUserProfile] = useState<any>(null);
   const isAdmin = userProfile?.role === 'ADMIN';
@@ -582,6 +584,7 @@ export default function DashboardPage() {
     : navItems;
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
+  const [dashboardPosts, setDashboardPosts] = useState<any[]>([]);
   const [myNominations, setMyNominations] = useState<Nomination[]>([]);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -637,17 +640,27 @@ export default function DashboardPage() {
           ? data.businesses[0]
           : data.businesses;
 
+        const fullName = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName;
+        const industry = data.industry ?? businessData?.business_type ?? 'Member';
+
         setMember({
-          name: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName,
+          name: fullName,
           business: businessData?.business_name ?? 'Founders Edge Member',
-          industry: data.industry ?? businessData?.business_type ?? 'Member',
+          industry,
+          stage: data.stage ?? '',
           joined: data.created_at
             ? new Date(data.created_at).toLocaleDateString('en-US', {
               month: 'short',
               year: 'numeric',
             })
             : 'May 2026',
-          profileCompletion: 85,
+          profileCompletion: computeProfileCompletion({
+            name: fullName,
+            email: userEmail,
+            industry,
+            stage: data.stage,
+            avatarUrl: loggedInUser.avatarUrl,
+          }).percent,
         });
 
         await loadSubmissions(data.id);
@@ -659,6 +672,11 @@ export default function DashboardPage() {
         name: userName,
         business: 'Founders Edge Member',
         industry: 'Member',
+        profileCompletion: computeProfileCompletion({
+          name: userName,
+          email: userEmail,
+          avatarUrl: loggedInUser.avatarUrl,
+        }).percent,
       }));
 
       await loadSubmissions();
@@ -750,6 +768,21 @@ export default function DashboardPage() {
     loadOffers();
     loadNominations();
   }, []);
+
+  // Recompute profile completion when switching sections (picks up business/owner
+  // profile edits made in the Business/Owners tabs without needing a reload).
+  useEffect(() => {
+    setMember(prev => ({
+      ...prev,
+      profileCompletion: computeProfileCompletion({
+        name: prev.name,
+        email: userProfile?.email,
+        industry: prev.industry,
+        stage: prev.stage,
+        avatarUrl: userProfile?.avatarUrl,
+      }).percent,
+    }));
+  }, [activeSection, userProfile]);
 
   async function deleteSubmission(id: string) {
     try {
@@ -1153,140 +1186,125 @@ export default function DashboardPage() {
 
   // ── Section: Main Dashboard ────────────────────────────────────
   function DashboardSection() {
-    return (
-      <div style={{ padding: '40px' }}>
-        {/* Stats row */}
-        <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
-          {[
-            { label: 'Profile Views', value: '142', change: '+18% this month', icon: User },
-            { label: 'Connections Made', value: '8', change: '3 new this month', icon: Users },
-            { label: 'Events Attended', value: '5', change: '2 upcoming', icon: Calendar },
-            { label: 'Resources Saved', value: '12', change: 'Updated weekly', icon: BookOpen },
-          ].map(stat => (
-            <div key={stat.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', color: '#9a9585', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
-                <stat.icon size={16} style={{ color: '#e7b605' }} />
-              </div>
-              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', lineHeight: 1, marginBottom: 6 }}>{stat.value}</div>
-              <div style={{ fontSize: '12px', color: '#9a9585' }}>{stat.change}</div>
-            </div>
-          ))}
-        </div>
+  const combinedItems = [
+    ...mySubmissions.slice(0, 3).map(item => ({
+      id: item.id,
+      type: 'event',
+      title: item.title,
+      subtitle: item.category,
+      date: item.submittedAt,
+      status: item.status,
+    })),
+    ...myOffers.slice(0, 3).map(item => ({
+      id: item.id,
+      type: 'offer',
+      title: item.title,
+      subtitle: item.category,
+      date: item.submittedAt,
+      status: item.status,
+    })),
+    ...dashboardPosts.slice(0, 3).map(item => ({
+      id: item.id,
+      type: 'post',
+      title: item.content,
+      subtitle: item.author_business || item.author_name || 'Community Post',
+      date: item.created_at,
+      status: 'active',
+    })),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        <div className="grid-2" style={{ marginBottom: 2 }}>
-          {/* Recommended Events */}
-          <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>Recommended Events</h2>
-              <button
-                onClick={() => setActiveSection('events')}
-                style={{ background: 'none', border: 'none', color: '#e7b605', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
-              >
-                My Submissions <ChevronRight size={14} />
-              </button>
+  return (
+    <div style={{ padding: '40px' }}>
+      <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
+        {[
+          { label: 'My Events', value: String(mySubmissions.length), change: 'Submitted events', icon: Calendar },
+          { label: 'My Offers', value: String(myOffers.length), change: 'Submitted offers', icon: Tag },
+          { label: 'Feed Posts', value: String(dashboardPosts.length), change: 'Recent community posts', icon: Rss },
+          { label: 'Awards', value: String(myNominations.length), change: 'My nominations', icon: Trophy },
+        ].map(stat => (
+          <div key={stat.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+              <span style={{ fontSize: '12px', color: '#9a9585', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
+              <stat.icon size={16} style={{ color: '#e7b605' }} />
             </div>
-            {recommendations.events.map((e, i) => (
-              <div key={i} style={{ padding: '16px 0', borderBottom: i < recommendations.events.length - 1 ? '1px solid #f0efe9' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: 4 }}>{e.title}</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <span style={{ fontSize: '12px', color: '#9a9585' }}><Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />{e.date}</span>
-                    <span className="tag" style={{ padding: '2px 8px', fontSize: '10px' }}>{e.type}</span>
-                  </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '11px', color: '#9a9585', marginBottom: 4 }}>Match</div>
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#e7b605' }}>{e.match}%</div>
-                </div>
-              </div>
-            ))}
+            <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', lineHeight: 1, marginBottom: 6 }}>{stat.value}</div>
+            <div style={{ fontSize: '12px', color: '#9a9585' }}>{stat.change}</div>
           </div>
-
-          {/* Smart Matches */}
-          <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>Your Matches</h2>
-                <span style={{ padding: '2px 8px', background: '#e7b605', color: '#000', fontSize: '10px', fontWeight: 800 }}>NEW</span>
-              </div>
-            </div>
-            {recommendations.matches.map((m, i) => (
-              <div key={i} style={{ padding: '16px 0', borderBottom: i < recommendations.matches.length - 1 ? '1px solid #f0efe9' : 'none', display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{ width: 40, height: 40, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', flexShrink: 0 }}>
-                  {m.name.charAt(0)}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, fontSize: '15px' }}>{m.name}</div>
-                  <div style={{ fontSize: '12px', color: '#9a9585', marginBottom: 2 }}>{m.business}</div>
-                  <div style={{ fontSize: '11px', color: '#9b7011' }}>{m.reason}</div>
-                </div>
-                <button className="btn-primary" style={{ padding: '8px 14px', fontSize: '11px', flexShrink: 0 }}>
-                  <MessageSquare size={12} /> Connect
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid-2" style={{ marginTop: 2 }}>
-          {/* Resources */}
-          <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px' }}>Curated for You</h2>
-              <Link href="/resources" style={{ color: '#e7b605', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>View all <ChevronRight size={14} /></Link>
-            </div>
-            {recommendations.resources.map((r, i) => (
-              <div key={i} style={{ padding: '16px 0', borderBottom: i < recommendations.resources.length - 1 ? '1px solid #f0efe9' : 'none' }}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-                  <span className="tag">{r.category}</span>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: '15px', marginBottom: 4 }}>{r.title}</div>
-                <div style={{ fontSize: '12px', color: '#9b7011' }}>{r.relevance}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Supper Club */}
-          <div style={{ background: '#000', padding: '28px', color: '#fff' }}>
-            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '18px', color: '#fff', marginBottom: 20 }}>Q3 Supper Club</h2>
-            <div style={{ background: '#111', border: '1px solid #1a1a1a', borderLeft: '3px solid #e7b605', padding: '20px', marginBottom: 16 }}>
-              <div style={{ fontSize: '11px', color: '#e7b605', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 8 }}>Invite · Jul 15, 2025</div>
-              <div style={{ fontWeight: 700, marginBottom: 4 }}>Exits & New Beginnings</div>
-              <div style={{ fontSize: '13px', color: '#888' }}>Anju Restaurant · 7:00 PM</div>
-              <div style={{ fontSize: '13px', color: '#e7b605', marginTop: 8, fontWeight: 700 }}>2 spots remaining</div>
-            </div>
-            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-              Reserve My Spot <Zap size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Quick-access chips */}
-        <div style={{ marginTop: 2, background: '#fff', border: '1px solid #e2e0d8', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '12px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>Quick Access</span>
-          <button onClick={() => setActiveSection('events')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#9b7011'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#5a5650'; }}
-          >
-            <Calendar size={13} /> My Events ({mySubmissions.length})
-          </button>
-          <button onClick={() => setActiveSection('offers')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#9b7011'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#5a5650'; }}
-          >
-            <Tag size={13} /> My Offers ({myOffers.length})
-          </button>
-          <button onClick={() => setActiveSection('awards')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer', transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#9b7011'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#5a5650'; }}
-          >
-            <Trophy size={13} /> My Awards ({myNominations.length})
-          </button>
-        </div>
+        ))}
       </div>
-    );
-  }
+
+      <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px', marginBottom: 2 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div>
+            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 4 }}>
+              Unified Home Dashboard
+            </h2>
+            <div style={{ fontSize: '13px', color: '#9a9585' }}>
+              Recent events, offers, and community posts in one place
+            </div>
+          </div>
+        </div>
+
+        {combinedItems.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', borderTop: '1px solid #f0efe9' }}>
+            <Rss size={40} style={{ color: '#e2e0d8', marginBottom: 16 }} />
+            <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9a9585', marginBottom: 8 }}>
+              No recent activity yet
+            </div>
+            <div style={{ fontSize: '14px', color: '#b8b4ae', fontFamily: 'Noto Serif, serif' }}>
+              Events, offers, and community posts will appear here once available.
+            </div>
+          </div>
+        ) : (
+          <div>
+            {combinedItems.map(item => (
+              <div key={`${item.type}-${item.id}`} style={{ padding: '18px 0', borderTop: '1px solid #f0efe9', display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+                    <span className="tag" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
+                      {item.type}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#9a9585' }}>
+                      {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </span>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#2a2820', marginBottom: 4 }}>
+                    {item.title?.length > 90 ? item.title.slice(0, 90) + '…' : item.title}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#9a9585' }}>{item.subtitle}</div>
+                </div>
+
+                <span style={{ fontSize: '11px', fontWeight: 700, color: '#9b7011', textTransform: 'uppercase', flexShrink: 0 }}>
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div style={{ marginTop: 2, background: '#fff', border: '1px solid #e2e0d8', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '12px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>Quick Access</span>
+
+        <button onClick={() => setActiveSection('feed')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+          <Rss size={13} /> Feed
+        </button>
+
+        <button onClick={() => setActiveSection('events')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+          <Calendar size={13} /> My Events ({mySubmissions.length})
+        </button>
+
+        <button onClick={() => setActiveSection('offers')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+          <Tag size={13} /> My Offers ({myOffers.length})
+        </button>
+
+        <button onClick={() => setActiveSection('awards')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+          <Trophy size={13} /> My Awards ({myNominations.length})
+        </button>
+      </div>
+    </div>
+  );
+}
 
   // ── Render ─────────────────────────────────────────────────────
   return (
@@ -1356,7 +1374,7 @@ export default function DashboardPage() {
         <div style={{ background: '#fff', borderBottom: '1px solid #e2e0d8', padding: '0 40px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 40 }}>
           <div>
             <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '22px' }}>
-              {activeSection === 'dashboard' ? `Good morning, ${member.name.split(' ')[0]} 👋` : sectionTitles[activeSection]}
+              {(activeSection === 'dashboard' || activeSection === 'feed') ? `Good morning, ${member.name.split(' ')[0]} 👋` : sectionTitles[activeSection]}
             </h1>
             <div style={{ fontSize: '13px', color: '#9a9585' }}>Member since {member.joined}</div>
           </div>
@@ -1374,7 +1392,7 @@ export default function DashboardPage() {
 
         {/* Section content */}
         {activeSection === 'dashboard' && <DashboardSection />}
-        {activeSection === 'feed' && <FeedSection memberName={member.name} memberBusiness={member.business} />}
+        {activeSection === 'feed' && <FeedSection memberName={member.name} memberBusiness={member.business} basics={{ email: userProfile?.email, industry: member.industry, stage: member.stage, avatarUrl: userProfile?.avatarUrl }} />}
         {activeSection === 'events' && <EventsSection />}
         {activeSection === 'offers' && <OffersSection />}
         {activeSection === 'awards' && <AwardsSection />}

@@ -88,18 +88,6 @@ export default function MembershipPage() {
 
       {/* Hero */}
       <div style={{ background: '#000', minHeight: '70vh', display: 'flex', alignItems: 'center', paddingTop: 72, position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          <div style={{ position: 'absolute', right: -100, top: '10%', width: 600, height: 600, background: 'radial-gradient(circle, rgba(231,182,5,0.07) 0%, transparent 70%)', borderRadius: '50%' }} />
-          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.03 }} preserveAspectRatio="none">
-            <defs>
-              <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#e7b605" strokeWidth="1" />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-        </div>
-
         <div className="container" style={{ position: 'relative', zIndex: 1, paddingTop: 80, paddingBottom: 100 }}>
           <div className="section-label" style={{ color: '#e7b605' }}>Membership</div>
           <h1 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: 'clamp(42px, 7vw, 84px)', lineHeight: 1.0, color: '#fff', letterSpacing: '-0.02em', marginBottom: 24, maxWidth: 800 }}>

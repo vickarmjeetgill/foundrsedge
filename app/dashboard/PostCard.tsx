@@ -67,12 +67,12 @@ export default function PostCard({ post, currentUserName, currentUserBusiness, o
 
   return (
     <>
-      <div style={{ background: '#fff', border: '1px solid #e2e0d8', borderTop: 'none', padding: '24px', position: 'relative' }}>
+      <div style={{ background: '#fff', border: '1px solid #e2e0d8', borderRadius: 12, padding: '20px 24px', position: 'relative' }}>
 
         {/* Author row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ width: 40, height: 40, background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', flexShrink: 0, fontFamily: 'DM Sans, sans-serif' }}>
+            <div style={{ width: 40, height: 40, borderRadius: '50%', background: '#000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e7b605', fontWeight: 800, fontSize: '16px', flexShrink: 0, fontFamily: 'DM Sans, sans-serif' }}>
               {post.authorName.charAt(0)}
             </div>
             <div>
@@ -106,15 +106,38 @@ export default function PostCard({ post, currentUserName, currentUserBusiness, o
         </div>
 
         {/* Content */}
-        <p style={{ fontFamily: 'Noto Serif, serif', color: '#2a2820', fontSize: '15px', lineHeight: 1.75, marginBottom: post.linkedType ? 16 : 0, whiteSpace: 'pre-wrap' }}>
-          {post.content}
-        </p>
+        {post.content && (
+          <p style={{ fontFamily: 'Noto Serif, serif', color: '#2a2820', fontSize: '15px', lineHeight: 1.75, marginBottom: (post.imageUrl || post.externalUrl || post.linkedType) ? 14 : 0, whiteSpace: 'pre-wrap' }}>
+            {post.content}
+          </p>
+        )}
+
+        {/* Image */}
+        {post.imageUrl && (
+          <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e0d8', marginBottom: (post.externalUrl || post.linkedType) ? 14 : 0 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={post.imageUrl} alt="Post attachment" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }} />
+          </div>
+        )}
+
+        {/* External link card */}
+        {post.externalUrl && (
+          <a href={post.externalUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', gap: 12, alignItems: 'center', border: '1px solid #e2e0d8', borderRadius: 10, padding: '12px 14px', background: '#f9f9f7', textDecoration: 'none', marginBottom: post.linkedType ? 14 : 0 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 8, background: '#f0efe9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#9b7011' }}>
+              <ExternalLink size={18} />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: '10px', fontWeight: 800, color: '#9b7011', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 3 }}>Link</div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#2a2820', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{post.externalTitle || post.externalUrl}</div>
+            </div>
+          </a>
+        )}
 
         {/* Linked content card */}
         {post.linkedType && (
-          <div style={{ border: '1px solid #e2e0d8', borderLeft: '4px solid #e7b605', padding: '14px 18px', background: '#f9f9f7' }}>
+          <div style={{ border: '1px solid #e2e0d8', borderLeft: '4px solid #e7b605', borderRadius: 10, padding: '14px 18px', background: '#f9f9f7' }}>
             <div style={{ fontSize: '10px', fontWeight: 800, color: '#9b7011', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
-              {post.linkedType === 'event' ? '📅 Event' : '🏷️ Offer'}
+              {post.linkedType === 'event' ? 'Event' : 'Offer'}
             </div>
             <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '15px', color: '#2a2820', marginBottom: 4 }}>{post.linkedTitle}</div>
             {post.linkedSubtitle && (
