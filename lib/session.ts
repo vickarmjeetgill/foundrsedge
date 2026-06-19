@@ -7,7 +7,7 @@ import { prisma } from './prisma';
 /**
  * Sets secure access (session) and refresh cookies, and stores the refresh token in the database.
  */
-export async function setSession(userId: string) {
+export async function setSession(userId: string, impersonatorId?: string) {
     // 1. Retrieve the user's actual role from the database
     const user = await prisma.user.findUnique({
         where: { id: userId },
@@ -17,13 +17,13 @@ export async function setSession(userId: string) {
 
     const sessionExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     const refreshExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-    
+
     // 2. Generate both session JWT (15m) and refresh JWT (7d), carrying the role
-    const session = await encrypt({ userId, role }, '15m');
-    const refreshToken = await encrypt({ userId, role }, '7d');
+    const session = await encrypt({ userId, role, impersonatorId }, '15m');
+    const refreshToken = await encrypt({ userId, role, impersonatorId }, '7d');
 
     const cookieStore = await cookies();
-    
+
     // 3. Set the 15-minute access token cookie
     cookieStore.set('session', session, {
         expires: sessionExpiry,
@@ -78,6 +78,8 @@ export async function getCurrentUser() {
     const user = await prisma.user.findUnique({
         where: { id: payload.userId as string },
     });
+
+    if (!user || user.status === 'DEACTIVATED') return null;
 
     return user;
 }

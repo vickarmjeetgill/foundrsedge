@@ -1339,7 +1339,10 @@ export default function DashboardPage() {
             <Settings size={16} /> Settings
           </Link>
           <button
-            onClick={async () => { await logout(); }}
+            onClick={async () => {
+              localStorage.removeItem('fe_my_submissions');
+              await logout();
+            }}
             style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 24px', color: '#666', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '14px', background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
           >
             <LogOut size={16} /> Sign Out

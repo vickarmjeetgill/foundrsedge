@@ -27,6 +27,10 @@ export async function login(formData: FormData) {
             return { error: "Invalid email or password." }
         }
 
+        if (user.status === 'DEACTIVATED') {
+            return { error: 'Your account has been deactivated. Please contact support.' };
+        }
+
         // Establish session cookies (access token + refresh token)
         await setSession(user.id)
 

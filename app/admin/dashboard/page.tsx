@@ -1126,6 +1126,7 @@ export default function AdminDashboard() {
   // Handle administrator log out and clear admin sessions
   async function handleLogout() {
     localStorage.removeItem('fe_admin');
+    localStorage.removeItem('fe_my_submissions');
     await logout();
   }
 

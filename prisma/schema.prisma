@@ -53,6 +53,7 @@ model User {
   updatedAt    DateTime @updatedAt
   role         String   @default("MEMBER")
   avatarUrl    String?
+  status String @default("ACTIVE")
 }
 
 model offers {

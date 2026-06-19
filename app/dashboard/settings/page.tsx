@@ -335,6 +335,7 @@ export default function SettingsPage() {
           </Link>
           <button
             onClick={async () => {
+              localStorage.removeItem('fe_my_submissions');
               await logout();
             }}
             style={{

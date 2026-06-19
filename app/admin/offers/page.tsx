@@ -192,7 +192,11 @@ export default function AdminOffersPage() {
           <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
         <button
-          onClick={async () => { localStorage.removeItem('fe_admin'); await logout(); }}
+          onClick={async () => {
+            localStorage.removeItem('fe_admin');
+            localStorage.removeItem('fe_my_submissions');
+            await logout();
+          }}
           style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}
         >
           <LogOut size={14} /> Sign Out

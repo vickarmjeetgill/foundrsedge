@@ -7,6 +7,8 @@ import {
   LogOut, CheckCircle, XCircle, Eye, Trash2, AlertTriangle,
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { getProfile } from '@/app/actions/profile';
+import { logout } from '@/app/actions/auth';
 
 type FlagStatus = 'pending' | 'resolved' | 'dismissed';
 
@@ -49,15 +51,25 @@ export default function AdminFlaggedPage() {
   const [preview, setPreview] = useState<FlagReport | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (localStorage.getItem('fe_admin') !== 'true') {
-        router.push('/');
-      } else {
-        setAuthChecked(true);
-        const raw = localStorage.getItem('fe_flag_reports');
-        if (raw) { try { setReports(JSON.parse(raw)); } catch {} }
+    const checkAdminAccess = async () => {
+      const res = await getProfile();
+
+      if (!res.success || !res.user) {
+        router.push('/login');
+        return;
       }
-    }
+
+      if ((res.user as any).role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
+      }
+
+      setAuthChecked(true);
+      const raw = localStorage.getItem('fe_flag_reports');
+      if (raw) { try { setReports(JSON.parse(raw)); } catch {} }
+    };
+
+    checkAdminAccess();
   }, [router]);
 
   function showToast(msg: string) {
@@ -180,7 +192,7 @@ export default function AdminFlaggedPage() {
           <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
           <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
-        <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={async () => { localStorage.removeItem('fe_admin'); localStorage.removeItem('fe_my_submissions'); await logout(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
           <LogOut size={14} /> Sign Out
         </button>
       </div>
