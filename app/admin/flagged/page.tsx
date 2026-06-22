@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Flag, LayoutDashboard, ClipboardList, Tag, Trophy,
-  LogOut, CheckCircle, XCircle, Eye, Trash2, AlertTriangle,
+  LogOut, CheckCircle, XCircle, Eye, Trash2, AlertTriangle, Users,
 } from 'lucide-react';
 import Logo from '@/components/Logo';
 import { getProfile } from '@/app/actions/profile';
@@ -227,6 +227,11 @@ export default function AdminFlaggedPage() {
                 {stats.pending}
               </span>
             )}
+          </Link>
+          <Link href="/admin/users" style={navLinkBase}
+            onMouseEnter={e => { e.currentTarget.style.color = '#ccc'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = '#888'; }}>
+            <Users size={14} /> Users
           </Link>
         </div>
       </div>
