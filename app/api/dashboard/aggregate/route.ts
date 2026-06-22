@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withErrorHandling } from '@/lib/api-error-handler';
 
-export async function GET() {
+export const GET = withErrorHandling(async () => {
   try {
     const [events, offers, posts, notifications] = await Promise.all([
       (prisma as any).events.findMany({
@@ -94,4 +95,4 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});
