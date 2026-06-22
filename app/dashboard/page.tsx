@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Settings, Calendar, Building2, Users, BookOpen, Trophy, Star,
   ChevronRight, TrendingUp, MessageSquare, Zap, LogOut, User,
@@ -572,6 +573,7 @@ function OwnersSection({ memberName, memberBusiness, setConfirmModal }: { member
 }
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section>('feed');
   const [member, setMember] = useState(defaultMember);
   const [userProfile, setUserProfile] = useState<any>(null);
@@ -598,11 +600,11 @@ export default function DashboardPage() {
     onConfirm: () => {},
   });
 
-  useEffect(() => {
-    const loadProfile = async () => {
+  const loadProfile = async () => {
       const res = await getProfile();
 
       if (!res.success || !res.user) {
+        router.push('/login');
         return;
       }
 
@@ -682,7 +684,18 @@ export default function DashboardPage() {
       await loadSubmissions();
     };
 
-    const loadSubmissions = async (memberId?: string) => {
+  // Check auth status on every tab/section transition within the dashboard
+  useEffect(() => {
+    const verifyAuth = async () => {
+      const res = await getProfile();
+      if (!res.success || !res.user) {
+        router.push('/login');
+      }
+    };
+    verifyAuth();
+  }, [activeSection, router]);
+
+  const loadSubmissions = async (memberId?: string) => {
       if (!memberId) {
         const raw = localStorage.getItem('fe_my_submissions');
         if (raw) {
@@ -762,8 +775,9 @@ export default function DashboardPage() {
       } catch (err) {
         console.error('Failed to load nominations from API:', err);
       }
-    };
+  };
 
+  useEffect(() => {
     loadProfile();
     loadOffers();
     loadNominations();

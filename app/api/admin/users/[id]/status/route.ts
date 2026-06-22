@@ -43,7 +43,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         if (id === currentUser.id) {
             return NextResponse.json(
-                { error: 'Conflict: Cannot deactivate admin account as admin' }, { status: 409 }
+                { error: 'Error: Cannot deactivate yourself as admin' }, { status: 409 }
             );
         }
 
@@ -54,6 +54,12 @@ export async function PATCH(request: Request, { params }: RouteParams) {
         if (!targetUser) {
             return NextResponse.json(
                 { error: 'Not Found: User account does not exist.' }, { status: 404 }
+            );
+        }
+
+        if (targetUser.role === 'ADMIN' && normalizedStatus === 'DEACTIVATED') {
+            return NextResponse.json(
+                { error: 'Error: Cannot deactivate another admin user.' }, { status: 409 }
             );
         }
 

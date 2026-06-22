@@ -27,11 +27,18 @@ export async function getProfile() {
                 email: true,
                 name: true,
                 role: true,
+                status: true,
                 avatarUrl: true,
             }
         });
+
+        if (!user || user.status === 'DEACTIVATED') {
+            return { error: 'Unauthorized' };
+        }
+
+        const isImpersonating = !!decodedSession.impersonatorId;
         
-        return { success: true, user };
+        return { success: true, user, isImpersonating };
     } catch (error: any) {
         console.error('Error fetching profile:', error);
         return { error: error.message || 'Server error' };

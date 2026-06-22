@@ -20,6 +20,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -34,24 +35,36 @@ export default function Navbar() {
         const res = await getProfile();
         if (res.success && res.user) {
           setUser(res.user);
+          setIsImpersonating(!!res.isImpersonating);
         } else {
           setUser(null);
+          setIsImpersonating(false);
+          
+          // If on a protected route, redirect to login immediately
+          const protectedPrefixes = ['/dashboard', '/admin'];
+          if (protectedPrefixes.some(prefix => pathname.startsWith(prefix))) {
+            window.location.href = '/login';
+          }
         }
       } catch (err) {
         console.error("Auth check failed:", err);
       }
     }
     checkAuth();
+    
+    // Polling: check session status every 10 seconds in the background
+    const interval = setInterval(checkAuth, 10000);
+    return () => clearInterval(interval);
   }, [pathname]);
 
   const isHome = pathname === '/';
 
   return (
     <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+      position: 'fixed', top: isImpersonating ? 40 : 0, left: 0, right: 0, zIndex: 100,
       background: scrolled || !isHome ? 'rgba(0,0,0,0.97)' : 'transparent',
       borderBottom: scrolled ? '1px solid #1a1a1a' : '1px solid transparent',
-      transition: 'all 0.3s ease',
+      transition: 'all 0.3s ease, top 0.15s ease',
       backdropFilter: scrolled ? 'blur(12px)' : 'none',
     }}>
       <div className="container" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>

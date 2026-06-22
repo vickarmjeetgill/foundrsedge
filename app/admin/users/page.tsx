@@ -7,6 +7,8 @@ import {
   LogOut, Search, UserCheck, UserX, Repeat, ShieldCheck, X,
 } from 'lucide-react';
 import Logo from '@/components/Logo';
+import { getProfile } from '@/app/actions/profile';
+import { logout } from '@/app/actions/auth';
 
 type Role = 'MEMBER' | 'ADMIN';
 type Status = 'active' | 'suspended';
@@ -24,8 +26,8 @@ type AdminUser = {
 const ROLES: Role[] = ['MEMBER', 'ADMIN'];
 
 const roleStyles: Record<Role, { bg: string; color: string }> = {
-  MEMBER: { bg: '#f0efe9',              color: '#5a5650' },
-  ADMIN:  { bg: 'rgba(231,182,5,0.14)', color: '#9b7011' },
+  MEMBER: { bg: '#f0efe9', color: '#5a5650' },
+  ADMIN: { bg: 'rgba(231,182,5,0.14)', color: '#9b7011' },
 };
 
 type TabFilter = 'All' | 'Members' | 'Admins' | 'Suspended';
@@ -41,59 +43,152 @@ const navLinkBase: React.CSSProperties = {
 
 export default function AdminUsersPage() {
   const router = useRouter();
-  const [users, setUsers]   = useState<AdminUser[]>([]);
-  const [tab, setTab]       = useState<TabFilter>('All');
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [tab, setTab] = useState<TabFilter>('All');
   const [search, setSearch] = useState('');
   const [authChecked, setAuthChecked] = useState(false);
-  const [toast, setToast]   = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [impersonateTarget, setImpersonateTarget] = useState<AdminUser | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [errorTitle, setErrorTitle] = useState<string>('Action Failed');
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (localStorage.getItem('fe_admin') !== 'true') {
-        router.push('/');
-      } else {
-        setAuthChecked(true);
+    const checkAdminAccess = async () => {
+      const res = await getProfile();
+
+      if (!res.success || !res.user) {
+        router.push('/login');
+        return;
       }
-    }
+
+      if ((res.user as any).role !== 'ADMIN') {
+        router.push('/dashboard');
+        return;
+      }
+
+      setAuthChecked(true);
+    };
+
+    checkAdminAccess();
   }, [router]);
+
+  useEffect(() => {
+    if (authChecked) {
+      fetch('/api/admin/users').then(res => res.json()).then(data => {
+        const mapped = data.map((u: any) => ({
+          id: u.id,
+          name: u.name || 'Member',
+          email: u.email,
+          role: u.role,
+          status: u.status === 'DEACTIVATED' ? 'suspended' : 'active',
+          joined: u.createdAt,
+          business: u.memberProfile?.business?.[0]?.business_name || u.memberProfile?.industry || ''
+        }));
+        setUsers(mapped);
+      }).catch(console.error);
+    }
+  }, [authChecked]);
 
   function showToast(msg: string) {
     setToast(msg);
     setTimeout(() => setToast(null), 2500);
   }
 
-  function changeRole(id: string, role: Role) {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
-    const u = users.find(x => x.id === id);
-    showToast(`${u?.name ?? 'User'} is now ${role}`);
+  async function changeRole(id: string, role: Role) {
+    // Cache the original role in case the backend request fails
+    const originalUser = users.find(u => u.id === id);
+    const originalRole = originalUser?.role;
+
+    try {
+      const res = await fetch(`/api/admin/users/${id}/role`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, role } : u));
+        showToast(`${originalUser?.name ?? 'User'} is now ${role}`);
+      } else {
+        // Display backend error message in the modal and revert UI selector state
+        setErrorTitle('Role Update Failed');
+        setErrorMsg(data.error || 'Failed to update user role.');
+        if (originalRole) {
+          setUsers(prev => prev.map(u => u.id === id ? { ...u, role: originalRole } : u));
+        }
+      }
+    } catch (err) {
+      console.error('Error changing role:', err);
+      setErrorTitle('Role Update Failed');
+      setErrorMsg('An unexpected error occurred while updating role.');
+      if (originalRole) {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, role: originalRole } : u));
+      }
+    }
   }
 
-  function toggleStatus(id: string) {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'suspended' : 'active' } : u));
-    const u = users.find(x => x.id === id);
-    const next = u?.status === 'active' ? 'suspended' : 'reactivated';
-    showToast(`${u?.name ?? 'User'} ${next === 'suspended' ? 'suspended' : 'reactivated'}`);
+  async function toggleStatus(id: string) {
+    const user = users.find(u => u.id === id);
+    if (!user) return;
+
+    const nextStatus = user.status === 'active' ? 'DEACTIVATED' : 'ACTIVE';
+
+    try {
+      const res = await fetch(`/api/admin/users/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setUsers(prev => prev.map(u => u.id === id ? { ...u, status: u.status === 'active' ? 'suspended' : 'active' } : u));
+        showToast(nextStatus === 'DEACTIVATED' ? 'User suspended' : 'User reactivated');
+      } else {
+        setErrorTitle('Status Update Failed');
+        setErrorMsg(data.error || 'Failed to update user status.');
+      }
+    } catch (err) {
+      console.error('Error changing status:', err);
+      setErrorTitle('Status Update Failed');
+      setErrorMsg('An unexpected error occurred while updating status.');
+    }
   }
 
-  function confirmImpersonate() {
+  async function confirmImpersonate() {
     if (!impersonateTarget) return;
-    showToast(`Now impersonating ${impersonateTarget.name} (UI only)`);
-    setImpersonateTarget(null);
+
+    try {
+      const res = await fetch(`/api/admin/users/${impersonateTarget.id}/impersonate`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (res.ok) {
+        showToast(`Now impersonating ${impersonateTarget.name}`);
+        window.location.href = `/dashboard`;
+      } else {
+        setErrorTitle('Impersonation Error');
+        setErrorMsg(data.error || "Impersonation failed");
+        setImpersonateTarget(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setErrorTitle('Impersonation Error');
+      setErrorMsg("An unexpected error occurred during impersonation.");
+    }
   }
 
   const stats = {
-    total:     users.length,
-    members:   users.filter(u => u.role === 'MEMBER').length,
-    admins:    users.filter(u => u.role === 'ADMIN').length,
+    total: users.filter(u => u.status !== 'suspended').length,
+    members: users.filter(u => u.role === 'MEMBER' && u.status !== 'suspended').length,
+    admins: users.filter(u => u.role === 'ADMIN' && u.status !== 'suspended').length,
     suspended: users.filter(u => u.status === 'suspended').length,
   };
 
   const filtered = users.filter(u => {
     const matchTab =
-      tab === 'All' ||
-      (tab === 'Members' && u.role === 'MEMBER') ||
-      (tab === 'Admins' && u.role === 'ADMIN') ||
+      (tab === 'All' && u.status !== 'suspended') ||
+      (tab === 'Members' && u.role === 'MEMBER' && u.status !== 'suspended') ||
+      (tab === 'Admins' && u.role === 'ADMIN' && u.status !== 'suspended') ||
       (tab === 'Suspended' && u.status === 'suspended');
     const q = search.trim().toLowerCase();
     const matchSearch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.business ?? '').toLowerCase().includes(q);
@@ -107,6 +202,7 @@ export default function AdminUsersPage() {
       </div>
     );
   }
+
 
   return (
     <div style={{ minHeight: '100vh', background: '#f9f9f7', fontFamily: 'DM Sans, sans-serif' }}>
@@ -142,6 +238,39 @@ export default function AdminUsersPage() {
         </div>
       )}
 
+      {/* Error modal */}
+      {errorMsg && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 450, padding: 20 }}>
+          <div style={{ background: '#fff', border: '1px solid #e2e0d8', borderTop: '4px solid #c0392b', padding: '36px', maxWidth: 440, width: '100%', position: 'relative', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+            <button onClick={() => setErrorMsg(null)} aria-label="Close" style={{ position: 'absolute', top: 16, right: 16, background: 'none', border: 'none', cursor: 'pointer', color: '#9a9585' }}>
+              <X size={18} />
+            </button>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: '#c0392b', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>Action Failed</div>
+            <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', color: '#2a2820', marginBottom: 12 }}>
+              {errorTitle}
+            </h3>
+            <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.6, marginBottom: 24 }}>
+              {(() => {
+                // Regex checks if the error message begins with a colon-terminated prefix (e.g., "Error:" or "Conflict:")
+                // If matched, it separates the prefix and bolds it for better readability in the modal.
+                const match = errorMsg.match(/^([^:]+:)\s*(.*)$/);
+                if (match) {
+                  return (
+                    <>
+                      <strong>{match[1]}</strong> {match[2]}
+                    </>
+                  );
+                }
+                return errorMsg;
+              })()}
+            </p>
+            <button onClick={() => setErrorMsg(null)} style={{ padding: '10px 24px', background: '#c0392b', border: 'none', color: '#fff', fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '13px', cursor: 'pointer', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Okay
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Bar */}
       <div style={{ background: '#000', borderBottom: '1px solid #1a1a1a', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
@@ -149,7 +278,7 @@ export default function AdminUsersPage() {
           <div style={{ width: 1, height: 24, background: '#2a2a2a' }} />
           <span style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '13px', color: '#888', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Admin Panel</span>
         </div>
-        <button onClick={() => { localStorage.removeItem('fe_admin'); window.location.href = '/'; }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
+        <button onClick={async () => { localStorage.removeItem('fe_admin'); localStorage.removeItem('fe_my_submissions'); await logout(); }} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: '12px', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '8px 16px', cursor: 'pointer' }}>
           <LogOut size={14} /> Sign Out
         </button>
       </div>
@@ -193,10 +322,10 @@ export default function AdminUsersPage() {
         {/* Stats */}
         <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
           {[
-            { label: 'Total Users', value: stats.total,     color: '#2a2820' },
-            { label: 'Members',     value: stats.members,   color: '#5a5650' },
-            { label: 'Admins',      value: stats.admins,    color: '#9b7011' },
-            { label: 'Suspended',   value: stats.suspended, color: '#c0392b' },
+            { label: 'Total Users', value: stats.total, color: '#2a2820' },
+            { label: 'Members', value: stats.members, color: '#5a5650' },
+            { label: 'Admins', value: stats.admins, color: '#9b7011' },
+            { label: 'Suspended', value: stats.suspended, color: '#c0392b' },
           ].map(s => (
             <div key={s.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px 28px' }}>
               <div style={{ fontSize: '32px', fontWeight: 900, color: s.color, marginBottom: 4 }}>{s.value}</div>
@@ -262,15 +391,21 @@ export default function AdminUsersPage() {
                       </div>
                     </div>
 
-                    {/* Role — inline editable */}
+                    {/* Role — inline editable if active, static badge if suspended */}
                     <div>
-                      <select
-                        value={u.role}
-                        onChange={e => changeRole(u.id, e.target.value as Role)}
-                        style={{ padding: '6px 8px', border: '1px solid #e2e0d8', background: rs.bg, color: rs.color, fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', outline: 'none', borderRadius: 2 }}
-                      >
-                        {ROLES.map(r => <option key={r} value={r} style={{ background: '#fff', color: '#2a2820' }}>{r}</option>)}
-                      </select>
+                      {suspended ? (
+                        <span style={{ display: 'inline-flex', padding: '6px 12px', background: rs.bg, color: rs.color, fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', borderRadius: 2 }}>
+                          {u.role}
+                        </span>
+                      ) : (
+                        <select
+                          value={u.role}
+                          onChange={e => changeRole(u.id, e.target.value as Role)}
+                          style={{ padding: '6px 8px', border: '1px solid #e2e0d8', background: rs.bg, color: rs.color, fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', cursor: 'pointer', outline: 'none', borderRadius: 2 }}
+                        >
+                          {ROLES.map(r => <option key={r} value={r} style={{ background: '#fff', color: '#2a2820' }}>{r}</option>)}
+                        </select>
+                      )}
                     </div>
 
                     {/* Status */}
@@ -288,15 +423,21 @@ export default function AdminUsersPage() {
 
                     {/* Actions */}
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <button onClick={() => setImpersonateTarget(u)} title="Impersonate user" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', color: '#5a5650', transition: 'all 0.15s' }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#9b7011'; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#5a5650'; }}>
-                        <Repeat size={13} /> Impersonate
-                      </button>
                       {suspended ? (
-                        <button onClick={() => toggleStatus(u.id)} title="Reactivate account" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', color: '#27ae60', transition: 'all 0.15s' }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#27ae60'; e.currentTarget.style.background = 'rgba(39,174,96,0.06)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.background = 'transparent'; }}>
+                        <button disabled title="Cannot impersonate a suspended user" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'not-allowed', color: '#aba7a5', opacity: 0.5 }}>
+                          <Repeat size={13} /> Impersonate
+                        </button>
+                      ) : (
+                        <button onClick={() => setImpersonateTarget(u)} title="Impersonate user" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', color: '#5a5650', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor = '#e7b605'; e.currentTarget.style.color = '#9b7011'; }}
+                          onMouseLeave={e => { e.currentTarget.style.borderColor = '#e2e0d8'; e.currentTarget.style.color = '#5a5650'; }}>
+                          <Repeat size={13} /> Impersonate
+                        </button>
+                      )}
+                      {suspended ? (
+                        <button onClick={() => toggleStatus(u.id)} title="Reactivate account" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '7px 12px', border: '1px solid #27ae60', background: '#27ae60', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '11px', cursor: 'pointer', color: '#fff', transition: 'all 0.15s' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#219653'; e.currentTarget.style.borderColor = '#219653'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = '#27ae60'; e.currentTarget.style.borderColor = '#27ae60'; }}>
                           <UserCheck size={13} /> Activate
                         </button>
                       ) : (

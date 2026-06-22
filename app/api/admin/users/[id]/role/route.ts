@@ -33,7 +33,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
 
         if (id === currentUser.id) {
             return NextResponse.json(
-                { error: 'Conflict: You cannot demote admin role' },
+                { error: 'Error: You cannot demote your admin role' },
                 { status: 409 }
             );
         }

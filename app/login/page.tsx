@@ -85,8 +85,18 @@ function LoginForm() {
             />
             {/* Displays the error message text underneath the input */}
             {error && (
-              <p style={{ color: '#ff4444', fontSize: '12px', marginTop: '8px', fontFamily: 'DM Sans, sans-serif' }}>
-                {error}
+              <p style={{ color: '#ff4444', fontSize: '12px', marginTop: '8px', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+                {error.includes('contact support') ? (
+                  <>
+                    Your account has been deactivated. Please{' '}
+                    <a href="mailto:admin@foundersedge.com" style={{ color: '#e7b605', textDecoration: 'underline', fontWeight: 600 }}>
+                      contact support
+                    </a>
+                    .
+                  </>
+                ) : (
+                  error
+                )}
               </p>
             )}
           </div>
