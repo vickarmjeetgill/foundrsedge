@@ -27,14 +27,13 @@ export async function getProfile() {
                 email: true,
                 name: true,
                 role: true,
-                status: true,
                 avatarUrl: true,
             }
         });
 
-        if (!user || user.status === 'DEACTIVATED') {
-            return { error: 'Unauthorized' };
-        }
+     if (!user) {
+    return { error: 'Unauthorized' };
+}
 
         const isImpersonating = !!decodedSession.impersonatorId;
         
