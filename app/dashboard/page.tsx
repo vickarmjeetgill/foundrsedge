@@ -588,6 +588,10 @@ export default function DashboardPage() {
   const [myOffers, setMyOffers] = useState<MyOffer[]>([]);
   const [dashboardPosts, setDashboardPosts] = useState<any[]>([]);
   const [myNominations, setMyNominations] = useState<Nomination[]>([]);
+  const [nomPage, setNomPage] = useState(1);
+  const [nomTotalPages, setNomTotalPages] = useState(1);
+  const itemPerPage = 3;
+
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     title: string;
@@ -597,27 +601,27 @@ export default function DashboardPage() {
     isOpen: false,
     title: '',
     message: '',
-    onConfirm: () => {},
+    onConfirm: () => { },
   });
 
   const loadProfile = async () => {
-      const res = await getProfile();
+    const res = await getProfile();
 
-      if (!res.success || !res.user) {
-        router.push('/login');
-        return;
-      }
+    if (!res.success || !res.user) {
+      router.push('/login');
+      return;
+    }
 
-      const loggedInUser = res.user as any;
+    const loggedInUser = res.user as any;
 
-      setUserProfile(loggedInUser);
+    setUserProfile(loggedInUser);
 
-      const userEmail = loggedInUser.email || '';
-      const userName = loggedInUser.name || 'Member';
+    const userEmail = loggedInUser.email || '';
+    const userName = loggedInUser.name || 'Member';
 
-      const { data, error } = await supabase
-        .from('members')
-        .select(`
+    const { data, error } = await supabase
+      .from('members')
+      .select(`
           id,
           first_name,
           last_name,
@@ -630,59 +634,59 @@ export default function DashboardPage() {
             business_type
           )
         `)
-        .eq('email', userEmail)
-        .maybeSingle();
+      .eq('email', userEmail)
+      .maybeSingle();
 
-      if (error) {
-        console.error('Member/business lookup error:', error.message);
-      }
+    if (error) {
+      console.error('Member/business lookup error:', error.message);
+    }
 
-      if (data) {
-        const businessData = Array.isArray(data.businesses)
-          ? data.businesses[0]
-          : data.businesses;
+    if (data) {
+      const businessData = Array.isArray(data.businesses)
+        ? data.businesses[0]
+        : data.businesses;
 
-        const fullName = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName;
-        const industry = data.industry ?? businessData?.business_type ?? 'Member';
+      const fullName = `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || userName;
+      const industry = data.industry ?? businessData?.business_type ?? 'Member';
 
-        setMember({
-          name: fullName,
-          business: businessData?.business_name ?? 'Founders Edge Member',
-          industry,
-          stage: data.stage ?? '',
-          joined: data.created_at
-            ? new Date(data.created_at).toLocaleDateString('en-US', {
-              month: 'short',
-              year: 'numeric',
-            })
-            : 'May 2026',
-          profileCompletion: computeProfileCompletion({
-            name: fullName,
-            email: userEmail,
-            industry,
-            stage: data.stage,
-            avatarUrl: loggedInUser.avatarUrl,
-          }).percent,
-        });
-
-        await loadSubmissions(data.id);
-        return;
-      }
-
-      setMember(prev => ({
-        ...prev,
-        name: userName,
-        business: 'Founders Edge Member',
-        industry: 'Member',
+      setMember({
+        name: fullName,
+        business: businessData?.business_name ?? 'Founders Edge Member',
+        industry,
+        stage: data.stage ?? '',
+        joined: data.created_at
+          ? new Date(data.created_at).toLocaleDateString('en-US', {
+            month: 'short',
+            year: 'numeric',
+          })
+          : 'May 2026',
         profileCompletion: computeProfileCompletion({
-          name: userName,
+          name: fullName,
           email: userEmail,
+          industry,
+          stage: data.stage,
           avatarUrl: loggedInUser.avatarUrl,
         }).percent,
-      }));
+      });
 
-      await loadSubmissions();
-    };
+      await loadSubmissions(data.id);
+      return;
+    }
+
+    setMember(prev => ({
+      ...prev,
+      name: userName,
+      business: 'Founders Edge Member',
+      industry: 'Member',
+      profileCompletion: computeProfileCompletion({
+        name: userName,
+        email: userEmail,
+        avatarUrl: loggedInUser.avatarUrl,
+      }).percent,
+    }));
+
+    await loadSubmissions();
+  };
 
   // Check auth status on every tab/section transition within the dashboard
   useEffect(() => {
@@ -696,92 +700,108 @@ export default function DashboardPage() {
   }, [activeSection, router]);
 
   const loadSubmissions = async (memberId?: string) => {
-      if (!memberId) {
-        const raw = localStorage.getItem('fe_my_submissions');
-        if (raw) {
-          try {
-            setMySubmissions(JSON.parse(raw));
-          } catch { }
-        }
-        return;
+    if (!memberId) {
+      const raw = localStorage.getItem('fe_my_submissions');
+      if (raw) {
+        try {
+          setMySubmissions(JSON.parse(raw));
+        } catch { }
       }
+      return;
+    }
 
-      try {
-        const res = await fetch('/api/events?mySubmissions=true');
+    try {
+      const res = await fetch('/api/events?mySubmissions=true');
 
-        if (res.ok) {
-          const allEvents = await res.json();
-          const mine = allEvents.filter((e: any) => e.member_id === memberId);
+      if (res.ok) {
+        const allEvents = await res.json();
+        const mine = allEvents.filter((e: any) => e.member_id === memberId);
 
-          const mapped: Submission[] = mine.map((e: any) => ({
-            id: e.id,
-            title: e.title,
-            category: e.category,
-            submittedAt: e.created_At || e.created_at || new Date().toISOString(),
-            status: e.status?.toLowerCase() || 'pending',
-          }));
+        const mapped: Submission[] = mine.map((e: any) => ({
+          id: e.id,
+          title: e.title,
+          category: e.category,
+          submittedAt: e.created_At || e.created_at || new Date().toISOString(),
+          status: e.status?.toLowerCase() || 'pending',
+        }));
 
-          setMySubmissions(mapped);
-        }
-      } catch (err) {
-        console.error('Failed to load submissions from API:', err);
+        setMySubmissions(mapped);
       }
-    };
+    } catch (err) {
+      console.error('Failed to load submissions from API:', err);
+    }
+  };
 
-    const loadOffers = async () => {
-      try {
-        const res = await fetch('/api/offers?mySubmissions=true');
-        if (res.ok) {
-          const dbData = await res.json();
-          const mapped: MyOffer[] = dbData.map((o: any) => ({
-            id: o.id,
-            title: o.title,
-            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
-            category: o.category,
-            type: o.type,
-            expiryDate: o.expiry_date,
-            submittedAt: o.created_at || o.created_At || new Date().toISOString(),
-            status: o.status.toLowerCase() as any,
-          }));
-          setMyOffers(mapped);
-        }
-      } catch (err) {
-        console.error('Failed to load offers from API:', err);
+  const loadOffers = async () => {
+    try {
+      const res = await fetch('/api/offers?mySubmissions=true');
+      if (res.ok) {
+        const dbData = await res.json();
+        const mapped: MyOffer[] = dbData.map((o: any) => ({
+          id: o.id,
+          title: o.title,
+          discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+          category: o.category,
+          type: o.type,
+          expiryDate: o.expiry_date,
+          submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+          status: o.status.toLowerCase() as any,
+        }));
+        setMyOffers(mapped);
       }
-    };
+    } catch (err) {
+      console.error('Failed to load offers from API:', err);
+    }
+  };
 
-    const loadNominations = async () => {
-      try {
-        const res = await fetch('/api/nominations');
-        if (res.ok) {
-          const dbNoms = await res.json();
-          const mapped: Nomination[] = dbNoms.map((n: any) => ({
-            id: n.id,
-            awardId: n.award_id,
-            awardName: n.award?.name || 'Unknown Award',
-            awardOrg: n.award?.org || '',
-            businessName: n.business_name,
-            category: n.award?.category || '',
-            contactName: n.contact_name,
-            contactEmail: n.contact_email,
-            website: n.website || '',
-            achievement: n.achievement,
-            statement: n.statement,
-            status: n.status.toLowerCase() as any,
-            submittedAt: n.created_at,
-          }));
-          setMyNominations(mapped);
+  const loadNominations = async () => {
+    try {
+      const queryParams = new URLSearchParams({
+        page: nomPage.toString(),
+        limit: itemPerPage.toString(),
+      });
+
+      const res = await fetch(`/api/nominations?${queryParams.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+
+        const dbNoms = Array.isArray(data) ? data : (data.nominations || []);
+        if (data.pagination) {
+          setNomTotalPages(data.pagination.totalPages);
+        } else {
+          setNomTotalPages(1);
         }
-      } catch (err) {
-        console.error('Failed to load nominations from API:', err);
+
+        const mapped: Nomination[] = dbNoms.map((n: any) => ({
+          id: n.id,
+          awardId: n.award_id,
+          awardName: n.award?.name || 'Unknown Award',
+          awardOrg: n.award?.org || '',
+          businessName: n.business_name,
+          category: n.award?.category || '',
+          contactName: n.contact_name,
+          contactEmail: n.contact_email,
+          website: n.website || '',
+          achievement: n.achievement,
+          statement: n.statement,
+          status: n.status.toLowerCase() as any,
+          submittedAt: n.created_at,
+        }));
+        setMyNominations(mapped);
       }
+    } catch (err) {
+      console.error('Failed to load nominations from API:', err);
+    }
   };
 
   useEffect(() => {
     loadProfile();
     loadOffers();
-    loadNominations();
   }, []);
+
+  useEffect(() => {
+    loadNominations();
+  }, [nomPage]);
 
   // Recompute profile completion when switching sections (picks up business/owner
   // profile edits made in the Business/Owners tabs without needing a reload).
@@ -1188,137 +1208,182 @@ export default function DashboardPage() {
           )}
         </div>
 
+          {nomTotalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 24, fontFamily: 'DM Sans, sans-serif' }}>
+              <button
+                disabled={nomPage === 1}
+                onClick={() => setNomPage(prev => Math.max(prev - 1, 1))}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                  border: '1px solid #e2e0d8', background: '#fff', color: nomPage === 1 ? '#ccc' : '#2a2820',
+                  cursor: nomPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '12px'
+                }}
+              >
+                Prev
+              </button>
+              
+              {Array.from({ length: nomTotalPages }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  onClick={() => setNomPage(pageNum)}
+                  style={{
+                    padding: '8px 14px', border: '1px solid',
+                    borderColor: nomPage === pageNum ? '#e7b605' : '#e2e0d8',
+                    background: nomPage === pageNum ? '#e7b605' : '#fff',
+                    color: nomPage === pageNum ? '#fff' : '#2a2820',
+                    cursor: 'pointer', fontWeight: 700, fontSize: '12px'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                disabled={nomPage === nomTotalPages}
+                onClick={() => setNomPage(prev => Math.min(prev + 1, nomTotalPages))}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                  border: '1px solid #e2e0d8', background: '#fff', color: nomPage === nomTotalPages ? '#ccc' : '#2a2820',
+                  cursor: nomPage === nomTotalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '12px'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+
+
         <div style={{ marginTop: 2, background: '#000', padding: '24px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
           <div style={{ color: '#888', fontFamily: 'Noto Serif, serif', fontSize: '14px' }}>Discover all available awards and recognition opportunities</div>
           <Link href="/awards" className="btn-primary" style={{ fontSize: '12px', padding: '10px 18px' }}>
             Browse All Awards <ExternalLink size={13} />
           </Link>
         </div>
-      </div>
+      </div >
     );
   }
 
   // ── Section: Main Dashboard ────────────────────────────────────
   function DashboardSection() {
-  const combinedItems = [
-    ...mySubmissions.slice(0, 3).map(item => ({
-      id: item.id,
-      type: 'event',
-      title: item.title,
-      subtitle: item.category,
-      date: item.submittedAt,
-      status: item.status,
-    })),
-    ...myOffers.slice(0, 3).map(item => ({
-      id: item.id,
-      type: 'offer',
-      title: item.title,
-      subtitle: item.category,
-      date: item.submittedAt,
-      status: item.status,
-    })),
-    ...dashboardPosts.slice(0, 3).map(item => ({
-      id: item.id,
-      type: 'post',
-      title: item.content,
-      subtitle: item.author_business || item.author_name || 'Community Post',
-      date: item.created_at,
-      status: 'active',
-    })),
-  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const combinedItems = [
+      ...mySubmissions.slice(0, 3).map(item => ({
+        id: item.id,
+        type: 'event',
+        title: item.title,
+        subtitle: item.category,
+        date: item.submittedAt,
+        status: item.status,
+      })),
+      ...myOffers.slice(0, 3).map(item => ({
+        id: item.id,
+        type: 'offer',
+        title: item.title,
+        subtitle: item.category,
+        date: item.submittedAt,
+        status: item.status,
+      })),
+      ...dashboardPosts.slice(0, 3).map(item => ({
+        id: item.id,
+        type: 'post',
+        title: item.content,
+        subtitle: item.author_business || item.author_name || 'Community Post',
+        date: item.created_at,
+        status: 'active',
+      })),
+    ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  return (
-    <div style={{ padding: '40px' }}>
-      <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
-        {[
-          { label: 'My Events', value: String(mySubmissions.length), change: 'Submitted events', icon: Calendar },
-          { label: 'My Offers', value: String(myOffers.length), change: 'Submitted offers', icon: Tag },
-          { label: 'Feed Posts', value: String(dashboardPosts.length), change: 'Recent community posts', icon: Rss },
-          { label: 'Awards', value: String(myNominations.length), change: 'My nominations', icon: Trophy },
-        ].map(stat => (
-          <div key={stat.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-              <span style={{ fontSize: '12px', color: '#9a9585', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
-              <stat.icon size={16} style={{ color: '#e7b605' }} />
+    return (
+      <div style={{ padding: '40px' }}>
+        <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
+          {[
+            { label: 'My Events', value: String(mySubmissions.length), change: 'Submitted events', icon: Calendar },
+            { label: 'My Offers', value: String(myOffers.length), change: 'Submitted offers', icon: Tag },
+            { label: 'Feed Posts', value: String(dashboardPosts.length), change: 'Recent community posts', icon: Rss },
+            { label: 'Awards', value: String(myNominations.length), change: 'My nominations', icon: Trophy },
+          ].map(stat => (
+            <div key={stat.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                <span style={{ fontSize: '12px', color: '#9a9585', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
+                <stat.icon size={16} style={{ color: '#e7b605' }} />
+              </div>
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', lineHeight: 1, marginBottom: 6 }}>{stat.value}</div>
+              <div style={{ fontSize: '12px', color: '#9a9585' }}>{stat.change}</div>
             </div>
-            <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '32px', lineHeight: 1, marginBottom: 6 }}>{stat.value}</div>
-            <div style={{ fontSize: '12px', color: '#9a9585' }}>{stat.change}</div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px', marginBottom: 2 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-          <div>
-            <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 4 }}>
-              Unified Home Dashboard
-            </h2>
-            <div style={{ fontSize: '13px', color: '#9a9585' }}>
-              Recent events, offers, and community posts in one place
-            </div>
-          </div>
+          ))}
         </div>
 
-        {combinedItems.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 0', borderTop: '1px solid #f0efe9' }}>
-            <Rss size={40} style={{ color: '#e2e0d8', marginBottom: 16 }} />
-            <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9a9585', marginBottom: 8 }}>
-              No recent activity yet
-            </div>
-            <div style={{ fontSize: '14px', color: '#b8b4ae', fontFamily: 'Noto Serif, serif' }}>
-              Events, offers, and community posts will appear here once available.
-            </div>
-          </div>
-        ) : (
-          <div>
-            {combinedItems.map(item => (
-              <div key={`${item.type}-${item.id}`} style={{ padding: '18px 0', borderTop: '1px solid #f0efe9', display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-                    <span className="tag" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
-                      {item.type}
-                    </span>
-                    <span style={{ fontSize: '12px', color: '#9a9585' }}>
-                      {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                    </span>
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: '15px', color: '#2a2820', marginBottom: 4 }}>
-                    {item.title?.length > 90 ? item.title.slice(0, 90) + '…' : item.title}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#9a9585' }}>{item.subtitle}</div>
-                </div>
-
-                <span style={{ fontSize: '11px', fontWeight: 700, color: '#9b7011', textTransform: 'uppercase', flexShrink: 0 }}>
-                  {item.status}
-                </span>
+        <div style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '28px', marginBottom: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <div>
+              <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 4 }}>
+                Unified Home Dashboard
+              </h2>
+              <div style={{ fontSize: '13px', color: '#9a9585' }}>
+                Recent events, offers, and community posts in one place
               </div>
-            ))}
+            </div>
           </div>
-        )}
+
+          {combinedItems.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', borderTop: '1px solid #f0efe9' }}>
+              <Rss size={40} style={{ color: '#e2e0d8', marginBottom: 16 }} />
+              <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '16px', color: '#9a9585', marginBottom: 8 }}>
+                No recent activity yet
+              </div>
+              <div style={{ fontSize: '14px', color: '#b8b4ae', fontFamily: 'Noto Serif, serif' }}>
+                Events, offers, and community posts will appear here once available.
+              </div>
+            </div>
+          ) : (
+            <div>
+              {combinedItems.map(item => (
+                <div key={`${item.type}-${item.id}`} style={{ padding: '18px 0', borderTop: '1px solid #f0efe9', display: 'flex', justifyContent: 'space-between', gap: 16 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+                      <span className="tag" style={{ fontSize: '10px', padding: '2px 8px', textTransform: 'uppercase' }}>
+                        {item.type}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#9a9585' }}>
+                        {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '15px', color: '#2a2820', marginBottom: 4 }}>
+                      {item.title?.length > 90 ? item.title.slice(0, 90) + '…' : item.title}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#9a9585' }}>{item.subtitle}</div>
+                  </div>
+
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: '#9b7011', textTransform: 'uppercase', flexShrink: 0 }}>
+                    {item.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 2, background: '#fff', border: '1px solid #e2e0d8', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '12px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>Quick Access</span>
+
+          <button onClick={() => setActiveSection('feed')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+            <Rss size={13} /> Feed
+          </button>
+
+          <button onClick={() => setActiveSection('events')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+            <Calendar size={13} /> My Events ({mySubmissions.length})
+          </button>
+
+          <button onClick={() => setActiveSection('offers')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+            <Tag size={13} /> My Offers ({myOffers.length})
+          </button>
+
+          <button onClick={() => setActiveSection('awards')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
+            <Trophy size={13} /> My Awards ({myNominations.length})
+          </button>
+        </div>
       </div>
-
-      <div style={{ marginTop: 2, background: '#fff', border: '1px solid #e2e0d8', padding: '20px 28px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '12px', fontWeight: 700, color: '#9a9585', letterSpacing: '0.06em', textTransform: 'uppercase', marginRight: 4 }}>Quick Access</span>
-
-        <button onClick={() => setActiveSection('feed')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
-          <Rss size={13} /> Feed
-        </button>
-
-        <button onClick={() => setActiveSection('events')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
-          <Calendar size={13} /> My Events ({mySubmissions.length})
-        </button>
-
-        <button onClick={() => setActiveSection('offers')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
-          <Tag size={13} /> My Offers ({myOffers.length})
-        </button>
-
-        <button onClick={() => setActiveSection('awards')} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', border: '1px solid #e2e0d8', background: 'transparent', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '12px', color: '#5a5650', cursor: 'pointer' }}>
-          <Trophy size={13} /> My Awards ({myNominations.length})
-        </button>
-      </div>
-    </div>
-  );
-}
+    );
+  }
 
   // ── Render ─────────────────────────────────────────────────────
   return (

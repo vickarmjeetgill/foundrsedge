@@ -1,11 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/redis';
+import { rateLimit } from '@/lib/rate-limiter';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const { success } = await rateLimit(ip, 30, 60); // Allow more likes (e.g. 30 per min)
+    if (!success) {
+      return NextResponse.json({ success: false, error: 'Too Many Requests' }, { status: 429 });
+    }
+
     const { id } = await params;
     const body = await request.json();
 
@@ -44,6 +52,8 @@ export async function POST(
         },
       });
 
+      await invalidateCache();
+
       return NextResponse.json({
         success: true,
         liked: false,
@@ -76,12 +86,14 @@ export async function POST(
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      liked: true,
-      message: 'Like added and notification created.',
-      post: updatedPost,
-    });
+      await invalidateCache();
+
+      return NextResponse.json({
+        success: true,
+        liked: true,
+        message: 'Like added and notification created.',
+        post: updatedPost,
+      });
   } catch (error: any) {
     console.error('Failed to toggle like:', error);
 

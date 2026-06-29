@@ -68,20 +68,43 @@ export default function EventsPage() {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [dbEvents, setDbEvents] = useState<any[]>([]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, dateFilter, locationFilter, featuredOnly]);
+
   useEffect(() => {
     async function loadEvents() {
       try {
-        const res = await fetch('/api/events');
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+        });
+
+        if (category !== 'All') queryParams.append('category', category);
+        if (locationFilter !== 'All Locations') queryParams.append('locationType', locationFilter);
+        if (featuredOnly) queryParams.append('featured', 'true');
+        if (search) queryParams.append('q', search);
+
+        const res = await fetch(`/api/events?${queryParams.toString()}`);
         if (res.ok) {
           const data = await res.json();
-          setDbEvents(data);
+          setDbEvents(data.events || []);
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+            setTotalResults(data.pagination.total);
+          }
         }
       } catch (err) {
         console.error('Failed to load DB events:', err);
       }
     }
     loadEvents();
-  }, []);
+  }, [currentPage, category, locationFilter, featuredOnly, search, dateFilter]);
 
   const mappedDbEvents: Event[] = dbEvents.map((e: any) => ({
     id: e.id,
@@ -93,9 +116,9 @@ export default function EventsPage() {
     duration: '2 hrs',
     location: e.location,
     isOnline: e.location ? (
-      e.location.toLowerCase().includes('online') || 
-      e.location.toLowerCase().includes('zoom') || 
-      e.location.toLowerCase().includes('meeting link') || 
+      e.location.toLowerCase().includes('online') ||
+      e.location.toLowerCase().includes('zoom') ||
+      e.location.toLowerCase().includes('meeting link') ||
       e.location.toLowerCase().includes('provided upon registration')
     ) : false,
     price: e.price,
@@ -111,22 +134,7 @@ export default function EventsPage() {
   const allEvents = mappedDbEvents;
 
   const filtered = allEvents
-    .filter(e => e.status === 'approved')
     .filter(e => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !search ||
-        e.title.toLowerCase().includes(q) ||
-        e.desc.toLowerCase().includes(q) ||
-        e.host.toLowerCase().includes(q) ||
-        e.category.toLowerCase().includes(q);
-      const matchCat = category === 'All' || e.category === category;
-      const matchLocation =
-        locationFilter === 'All Locations' ||
-        (locationFilter === 'Online' && e.isOnline) ||
-        (locationFilter === 'In-Person' && !e.isOnline);
-      const matchFeatured = !featuredOnly || e.featured;
-
       let matchDate = true;
       if (dateFilter === 'This Week') {
         const { start, end } = getWeekRange();
@@ -138,7 +146,7 @@ export default function EventsPage() {
         matchDate = d >= start && d <= end;
       }
 
-      return matchSearch && matchCat && matchLocation && matchFeatured && matchDate;
+      return matchDate;
     })
     .sort((a, b) => {
       if (a.featured && !b.featured) return -1;
@@ -217,7 +225,7 @@ export default function EventsPage() {
       <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
         <div className="container">
           <div style={{ marginBottom: 24, color: '#9a9585', fontSize: '14px', fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>
-            {filtered.length} event{filtered.length !== 1 ? 's' : ''} found
+            Showing {filtered.length} of {totalResults} event{totalResults !== 1 ? 's' : ''} found
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -270,7 +278,7 @@ export default function EventsPage() {
                       {event.title}
                     </h3>
                     <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, marginBottom: 16, maxWidth: 580 }}>
-                      {event.desc.length > 140 ? event.desc.slice(0, 140) + '…' : event.desc}
+                      {(event.desc || '').length > 140 ? (event.desc || '').slice(0, 140) + '…' : (event.desc || '')}
                     </p>
 
                     <div style={{ color: '#9a9585', fontSize: '13px', marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>
@@ -317,6 +325,50 @@ export default function EventsPage() {
               );
             })}
           </div>
+
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 40, fontFamily: 'DM Sans, sans-serif' }}>
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '10px 16px',
+                  border: '1px solid #e2e0d8', background: '#fff', color: currentPage === 1 ? '#ccc' : '#2a2820',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px'
+                }}
+              >
+                Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: '10px 16px', border: '1px solid',
+                    borderColor: currentPage === pageNum ? '#e7b605' : '#e2e0d8',
+                    background: currentPage === pageNum ? '#e7b605' : '#fff',
+                    color: currentPage === pageNum ? '#fff' : '#2a2820',
+                    cursor: 'pointer', fontWeight: 700, fontSize: '13px'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '10px 16px',
+                  border: '1px solid #e2e0d8', background: '#fff', color: currentPage === totalPages ? '#ccc' : '#2a2820',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
 
           {/* Submit Event CTA */}
           <div style={{ marginTop: 48, background: '#000', padding: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>

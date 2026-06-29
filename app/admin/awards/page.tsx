@@ -12,20 +12,29 @@ type Tab = 'All' | 'Pending' | 'Approved' | 'Rejected' | 'Winner';
 const tabs: Tab[] = ['All', 'Pending', 'Approved', 'Rejected', 'Winner'];
 
 const statusColors: Record<Nomination['status'], { bg: string; color: string; label: string }> = {
-  pending:  { bg: 'rgba(230,126,34,0.1)', color: '#e67e22',  label: 'Pending' },
-  approved: { bg: 'rgba(39,174,96,0.1)',  color: '#27ae60',  label: 'Approved' },
-  rejected: { bg: 'rgba(192,57,43,0.1)',  color: '#c0392b',  label: 'Rejected' },
-  winner:   { bg: 'rgba(231,182,5,0.12)', color: '#9b7011',  label: '🏆 Winner' },
+  pending: { bg: 'rgba(230,126,34,0.1)', color: '#e67e22', label: 'Pending' },
+  approved: { bg: 'rgba(39,174,96,0.1)', color: '#27ae60', label: 'Approved' },
+  rejected: { bg: 'rgba(192,57,43,0.1)', color: '#c0392b', label: 'Rejected' },
+  winner: { bg: 'rgba(231,182,5,0.12)', color: '#9b7011', label: '🏆 Winner' },
 };
 
 export default function AdminAwardsPage() {
   const router = useRouter();
   const [nominations, setNominations] = useState<Nomination[]>([]);
-  const [tab, setTab]                 = useState<Tab>('All');
-  const [search, setSearch]           = useState('');
-  const [toast, setToast]             = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('All');
+  const [search, setSearch] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
-  const [expandedId, setExpandedId]   = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemPerPage = 3;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab]);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
@@ -52,9 +61,24 @@ export default function AdminAwardsPage() {
 
     async function loadNominations() {
       try {
-        const res = await fetch('/api/nominations');
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemPerPage.toString(),
+        });
+
+        const res = await fetch(`/api/nominations?${queryParams.toString()}`);
         if (!res.ok) return;
-        const dbNoms = await res.json();
+        const data = await res.json();
+
+        const dbNoms = Array.isArray(data) ? data : (data.nominations || []);
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages);
+          setTotalResults(data.pagination.total);
+        } else {
+          setTotalPages(1);
+          setTotalResults(dbNoms.length);
+        }
+
         const mapped: Nomination[] = dbNoms.map((n: any) => ({
           id: n.id,
           awardId: n.award_id,
@@ -77,7 +101,7 @@ export default function AdminAwardsPage() {
     }
 
     loadNominations();
-  }, [authChecked]);
+  }, [authChecked, currentPage, tab]);
 
   function showToast(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
@@ -119,11 +143,11 @@ export default function AdminAwardsPage() {
     });
 
   const counts = {
-    All:      nominations.length,
-    Pending:  nominations.filter(n => n.status === 'pending').length,
+    All: nominations.length,
+    Pending: nominations.filter(n => n.status === 'pending').length,
     Approved: nominations.filter(n => n.status === 'approved').length,
     Rejected: nominations.filter(n => n.status === 'rejected').length,
-    Winner:   nominations.filter(n => n.status === 'winner').length,
+    Winner: nominations.filter(n => n.status === 'winner').length,
   };
 
   if (!authChecked) {
@@ -152,11 +176,11 @@ export default function AdminAwardsPage() {
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 40px', display: 'flex', gap: 0 }}>
           {[
             { href: '/admin/dashboard', icon: <LayoutDashboard size={14} />, label: 'Content Manager', active: false },
-            { href: '/admin/events',    icon: <ClipboardList size={14} />,   label: 'Review Events',   active: false },
-            { href: '/admin/offers',    icon: <Tag size={14} />,             label: 'Review Offers',   active: false },
-            { href: '/admin/awards',    icon: <Trophy size={14} />,          label: 'Review Awards',   active: true },
-            { href: '/admin/flagged',   icon: <Flag size={14} />,            label: 'Flagged Content', active: false },
-            { href: '/admin/users',     icon: <Users size={14} />,           label: 'Users',           active: false },
+            { href: '/admin/events', icon: <ClipboardList size={14} />, label: 'Review Events', active: false },
+            { href: '/admin/offers', icon: <Tag size={14} />, label: 'Review Offers', active: false },
+            { href: '/admin/awards', icon: <Trophy size={14} />, label: 'Review Awards', active: true },
+            { href: '/admin/flagged', icon: <Flag size={14} />, label: 'Flagged Content', active: false },
+            { href: '/admin/users', icon: <Users size={14} />, label: 'Users', active: false },
           ].map(item => (
             <Link
               key={item.href}
@@ -177,10 +201,10 @@ export default function AdminAwardsPage() {
         {/* Stats */}
         <div className="grid-4" style={{ gap: 2, marginBottom: 32 }}>
           {[
-            { label: 'Total Nominations', value: counts.All,      color: '#2a2820' },
-            { label: 'Pending Review',    value: counts.Pending,  color: '#e67e22' },
-            { label: 'Approved',          value: counts.Approved, color: '#27ae60' },
-            { label: 'Winners Selected',  value: counts.Winner,   color: '#9b7011' },
+            { label: 'Total Nominations', value: counts.All, color: '#2a2820' },
+            { label: 'Pending Review', value: counts.Pending, color: '#e67e22' },
+            { label: 'Approved', value: counts.Approved, color: '#27ae60' },
+            { label: 'Winners Selected', value: counts.Winner, color: '#9b7011' },
           ].map(stat => (
             <div key={stat.label} style={{ background: '#fff', border: '1px solid #e2e0d8', padding: '24px 28px' }}>
               <div style={{ fontSize: '32px', fontWeight: 900, color: stat.color, marginBottom: 4 }}>{stat.value}</div>
@@ -262,11 +286,11 @@ export default function AdminAwardsPage() {
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                         {[
-                          { label: 'Business',      value: nom.businessName },
-                          { label: 'Contact',       value: nom.contactName },
-                          { label: 'Email',         value: nom.contactEmail },
-                          { label: 'Award',         value: nom.awardName },
-                          { label: 'Organisation',  value: nom.awardOrg },
+                          { label: 'Business', value: nom.businessName },
+                          { label: 'Contact', value: nom.contactName },
+                          { label: 'Email', value: nom.contactEmail },
+                          { label: 'Award', value: nom.awardName },
+                          { label: 'Organisation', value: nom.awardOrg },
                           ...(nom.website ? [{ label: 'Website', value: nom.website }] : []),
                         ].map(row => (
                           <div key={row.label}>
@@ -313,6 +337,49 @@ export default function AdminAwardsPage() {
         </div>
       </div>
 
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 32, fontFamily: 'DM Sans, sans-serif' }}>
+          <button
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+              border: '1px solid #e2e0d8', background: '#fff', color: currentPage === 1 ? '#ccc' : '#2a2820',
+              cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+            }}
+          >
+            Prev
+          </button>
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+            <button
+              key={pageNum}
+              onClick={() => setCurrentPage(pageNum)}
+              style={{
+                padding: '8px 14px', border: '1px solid',
+                borderColor: currentPage === pageNum ? '#e7b605' : '#e2e0d8',
+                background: currentPage === pageNum ? '#e7b605' : '#fff',
+                color: currentPage === pageNum ? '#fff' : '#2a2820',
+                cursor: 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              {pageNum}
+            </button>
+          ))}
+
+          <button
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+              border: '1px solid #e2e0d8', background: '#fff', color: currentPage === totalPages ? '#ccc' : '#2a2820',
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+            }}
+          >
+            Next
+          </button>
+        </div>
+      )}
       {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: 32, right: 32, background: '#000', color: '#fff', padding: '14px 24px', fontFamily: 'DM Sans, sans-serif', fontWeight: 700, fontSize: '14px', zIndex: 9999, boxShadow: '0 8px 32px rgba(0,0,0,0.3)' }}>

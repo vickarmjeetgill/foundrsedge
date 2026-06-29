@@ -38,6 +38,15 @@ export default function AdminOffersPage() {
   const [authChecked, setAuthChecked] = useState(false);
   const [expandedId, setExpandedId]   = useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab, search]);
+
   useEffect(() => {
     const checkAdminAccess = async () => {
       const res = await getProfile();
@@ -63,9 +72,26 @@ export default function AdminOffersPage() {
 
     async function loadAdminOffers() {
       try {
-        const res = await fetch('/api/offers?adminView=true');
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+          adminView: 'true'
+        });
+        if (tab !== 'All') queryParams.append('status', tab.toUpperCase());
+        if (search) queryParams.append('search', search);
+
+        const res = await fetch(`/api/offers?${queryParams.toString()}`);
         if (res.ok) {
-          const dbData = await res.json();
+          const data = await res.json();
+          const dbData = data.offers || [];
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+            setTotalResults(data.pagination.total);
+          } else {
+            setTotalPages(1);
+            setTotalResults(dbData.length);
+          }
+
           const mapped: Offer[] = dbData.map((o: any) => ({
             id: o.id,
             businessName: o.business_name,
@@ -91,7 +117,7 @@ export default function AdminOffersPage() {
       }
     }
     loadAdminOffers();
-  }, [authChecked]);
+  }, [authChecked, currentPage, tab, search]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -155,16 +181,7 @@ export default function AdminOffersPage() {
     }
   }
 
-  const filtered = offers
-    .filter(o => tab === 'All' || o.status === tab.toLowerCase())
-    .filter(o => {
-      const q = search.toLowerCase();
-      return !search ||
-        o.title.toLowerCase().includes(q) ||
-        o.businessName.toLowerCase().includes(q) ||
-        o.category.toLowerCase().includes(q) ||
-        o.discount.toLowerCase().includes(q);
-    });
+  const filtered = offers;
 
   const stats = {
     total:    offers.length,
@@ -428,6 +445,54 @@ export default function AdminOffersPage() {
             );
           })}
         </div>
+
+        <div style={{ marginTop: 12, fontSize: '12px', color: '#9a9585', textAlign: 'right' }}>
+          Showing {filtered.length} of {totalResults} offers
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 32, fontFamily: 'DM Sans, sans-serif' }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                border: '1px solid #e2e0d8', background: '#fff', color: currentPage === 1 ? '#ccc' : '#2a2820',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              Prev
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  padding: '8px 14px', border: '1px solid',
+                  borderColor: currentPage === pageNum ? '#e7b605' : '#e2e0d8',
+                  background: currentPage === pageNum ? '#e7b605' : '#fff',
+                  color: currentPage === pageNum ? '#fff' : '#2a2820',
+                  cursor: 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+                }}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                border: '1px solid #e2e0d8', background: '#fff', color: currentPage === totalPages ? '#ccc' : '#2a2820',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Toast */}

@@ -34,19 +34,46 @@ function daysUntil(dateStr: string) {
 }
 
 export default function AwardsPage() {
-  const [search, setSearch]           = useState('');
-  const [category, setCategory]       = useState('All Categories');
-  const [region, setRegion]           = useState('All Regions');
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('All Categories');
+  const [region, setRegion] = useState('All Regions');
   const [deadlineFilter, setDeadlineFilter] = useState('All Deadlines');
-  const [openOnly, setOpenOnly]       = useState(false);
-  const [awards, setAwards]           = useState<Award[]>(seedAwards);
+  const [openOnly, setOpenOnly] = useState(false);
+  const [awards, setAwards] = useState<Award[]>(seedAwards);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemPerPage = 3;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, region, deadlineFilter, openOnly, search]);
 
   useEffect(() => {
     async function loadAwards() {
       try {
-        const res = await fetch('/api/awards');
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemPerPage.toString(),
+        });
+
+        if (category !== 'All Categories') queryParams.append('category', category);
+        if (region !== 'All Regions') queryParams.append('region', region);
+        if (openOnly) queryParams.append('nominationsOpen', 'true');
+        if (search) queryParams.append('search', search);
+        if (deadlineFilter !== 'All Deadlines') queryParams.append('deadlineFilter', deadlineFilter);
+
+        const res = await fetch(`/api/awards?${queryParams.toString()}`);
         if (res.ok) {
-          const dbData = await res.json();
+          const data = await res.json();
+          const dbData = data.awards || [];
+
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+            setTotalResults(data.pagination.total);
+          }
+
           const mapped: Award[] = dbData.map((a: any) => ({
             ...a,
             awardDate: a.award_date || a.awardDate || '',
@@ -58,19 +85,19 @@ export default function AwardsPage() {
       }
     }
     loadAwards();
-  }, []);
+  }, [currentPage, category, region, openOnly, search, deadlineFilter]);
 
   const filtered = awards.filter(a => {
     const q = search.toLowerCase();
     const matchSearch = !search || a.name.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q) || a.org.toLowerCase().includes(q);
-    const matchCat    = category === 'All Categories' || a.category === category;
+    const matchCat = category === 'All Categories' || a.category === category;
     const matchRegion = region === 'All Regions' || a.region === region;
-    const matchOpen   = !openOnly || a.nominationsOpen;
+    const matchOpen = !openOnly || a.nominationsOpen;
     const days = daysUntil(a.deadline);
     let matchDeadline = true;
-    if (deadlineFilter === 'Open Now')      matchDeadline = a.nominationsOpen && (days === null || days > 0);
-    if (deadlineFilter === 'Next 30 Days')  matchDeadline = days !== null && days >= 0 && days <= 30;
-    if (deadlineFilter === 'Next 90 Days')  matchDeadline = days !== null && days >= 0 && days <= 90;
+    if (deadlineFilter === 'Open Now') matchDeadline = a.nominationsOpen && (days === null || days > 0);
+    if (deadlineFilter === 'Next 30 Days') matchDeadline = days !== null && days >= 0 && days <= 30;
+    if (deadlineFilter === 'Next 90 Days') matchDeadline = days !== null && days >= 0 && days <= 90;
     return matchSearch && matchCat && matchRegion && matchOpen && matchDeadline;
   }).sort((a, b) => {
     if (a.featured && !b.featured) return -1;
@@ -126,7 +153,7 @@ export default function AwardsPage() {
       <div style={{ padding: '60px 0', background: '#f9f9f7' }}>
         <div className="container">
           <div style={{ marginBottom: 24, color: '#9a9585', fontSize: '14px', fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>
-            {filtered.length} award{filtered.length !== 1 ? 's' : ''} found
+            Showing {filtered.length} of {totalResults} award{totalResults !== 1 ? 's' : ''} found
           </div>
 
           {filtered.length === 0 && (
@@ -140,9 +167,9 @@ export default function AwardsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {filtered.map(award => {
               const days = daysUntil(award.deadline);
-              const isUrgent  = days !== null && days <= 30 && days >= 0;
-              const isPast    = days !== null && days < 0;
-              const isClosed  = !award.nominationsOpen || isPast;
+              const isUrgent = days !== null && days <= 30 && days >= 0;
+              const isPast = days !== null && days < 0;
+              const isClosed = !award.nominationsOpen || isPast;
               return (
                 <div
                   key={award.id}
@@ -162,7 +189,7 @@ export default function AwardsPage() {
                     <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', marginBottom: 4, color: '#2a2820' }}>{award.name}</h3>
                     <div style={{ color: '#9b7011', fontSize: '13px', fontWeight: 700, letterSpacing: '0.04em', marginBottom: 12 }}>{award.org}{award.sponsor ? ` · Sponsored by ${award.sponsor}` : ''}</div>
                     <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, marginBottom: 16, maxWidth: 600 }}>
-                      {award.desc.length > 160 ? award.desc.slice(0, 160) + '…' : award.desc}
+                      {(award.desc || '').length > 160 ? (award.desc || '').slice(0, 160) + '…' : (award.desc || '')}
                     </p>
                     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#9a9585', fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }}>
@@ -194,6 +221,51 @@ export default function AwardsPage() {
               );
             })}
           </div>
+
+          {/* PAGE NAVIGATION RENDERING ENGINE */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 40, fontFamily: 'DM Sans, sans-serif' }}>
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '10px 16px',
+                  border: '1px solid #e2e0d8', background: '#fff', color: currentPage === 1 ? '#ccc' : '#2a2820',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px'
+                }}
+              >
+                Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+                <button
+                  key={pageNum}
+                  onClick={() => setCurrentPage(pageNum)}
+                  style={{
+                    padding: '10px 16px', border: '1px solid',
+                    borderColor: currentPage === pageNum ? '#e7b605' : '#e2e0d8',
+                    background: currentPage === pageNum ? '#e7b605' : '#fff',
+                    color: currentPage === pageNum ? '#fff' : '#2a2820',
+                    cursor: 'pointer', fontWeight: 700, fontSize: '13px'
+                  }}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4, padding: '10px 16px',
+                  border: '1px solid #e2e0d8', background: '#fff', color: currentPage === totalPages ? '#ccc' : '#2a2820',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </PageLayout>

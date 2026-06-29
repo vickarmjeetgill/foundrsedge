@@ -10,13 +10,17 @@ export async function GET(request: Request) {
         const featured = searchParams.get('featured');
         const nominationsOpen = searchParams.get('nominationsOpen') || searchParams.get('nominationOpen');
 
+        const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+        const limit = Math.max(1, parseInt(searchParams.get('limit') || '12', 10));
+        const skip = (page - 1) * limit;
+
         const where: any = {};
 
-        if (category) {
+        if (category && category !== 'All Categories') {
             where.category = category;
         }
 
-        if (region) {
+        if (region && region !== 'All Regions') {
             where.region = region;
         }
 
@@ -28,7 +32,6 @@ export async function GET(request: Request) {
 
         if (nominationsOpen === 'true') {
             where.nominationsOpen = true;
-            // deadline is stored as a String (e.g. "YYYY-MM-DD")
             const todayStr = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Edmonton" });
             where.deadline = {
                 gte: todayStr,
@@ -37,14 +40,41 @@ export async function GET(request: Request) {
             where.nominationsOpen = false;
         }
 
-        const awards = await prisma.awards.findMany({
-            where,
-            orderBy: {
-                deadline: 'asc',
-            },
-        });
+        const [total, awards] = await Promise.all([
+            prisma.awards.count({ where }),
+            prisma.awards.findMany({
+                where,
+                orderBy: {
+                    deadline: 'asc',
+                },
+                skip,
+                take: limit,
 
-        return NextResponse.json(awards);
+                select: {
+                    id: true,
+                    name: true,
+                    category: true,
+                    region: true,
+                    sponsor: true,
+                    featured: true,
+                    nominationsOpen: true,
+                    desc: true,
+                    org: true,
+                    deadline: true,
+                    value: true,
+                    cycle: true,
+                }
+            })
+        ]);
+        return NextResponse.json({
+            awards,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
 
     } catch (error: any) {
         console.error('Error fetching awards:', error);

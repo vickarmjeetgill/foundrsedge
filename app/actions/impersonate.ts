@@ -11,7 +11,6 @@ export async function exitImpersonate() {
     const payload = await decrypt(session);
 
     if (payload && payload.impersonatorId) {
-        // Log back in as the admin (impersonator)
         await setSession(payload.impersonatorId as string);
         redirect('/admin/users');
     } else {

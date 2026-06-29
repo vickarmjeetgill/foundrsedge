@@ -52,6 +52,15 @@ export default function AdminUsersPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [errorTitle, setErrorTitle] = useState<string>('Action Failed');
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab, search]);
+
   useEffect(() => {
     const checkAdminAccess = async () => {
       const res = await getProfile();
@@ -74,8 +83,24 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (authChecked) {
-      fetch('/api/admin/users').then(res => res.json()).then(data => {
-        const mapped = data.map((u: any) => ({
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString()
+      });
+      if (tab !== 'All') queryParams.append('tab', tab);
+      if (search) queryParams.append('search', search);
+
+      fetch(`/api/admin/users?${queryParams.toString()}`).then(res => res.json()).then(data => {
+        const dbUsers = data.users || [];
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages);
+          setTotalResults(data.pagination.total);
+        } else {
+          setTotalPages(1);
+          setTotalResults(dbUsers.length);
+        }
+
+        const mapped = dbUsers.map((u: any) => ({
           id: u.id,
           name: u.name || 'Member',
           email: u.email,
@@ -87,7 +112,7 @@ export default function AdminUsersPage() {
         setUsers(mapped);
       }).catch(console.error);
     }
-  }, [authChecked]);
+  }, [authChecked, currentPage, tab, search]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -184,16 +209,7 @@ export default function AdminUsersPage() {
     suspended: users.filter(u => u.status === 'suspended').length,
   };
 
-  const filtered = users.filter(u => {
-    const matchTab =
-      (tab === 'All' && u.status !== 'suspended') ||
-      (tab === 'Members' && u.role === 'MEMBER' && u.status !== 'suspended') ||
-      (tab === 'Admins' && u.role === 'ADMIN' && u.status !== 'suspended') ||
-      (tab === 'Suspended' && u.status === 'suspended');
-    const q = search.trim().toLowerCase();
-    const matchSearch = !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.business ?? '').toLowerCase().includes(q);
-    return matchTab && matchSearch;
-  });
+  const filtered = users;
 
   if (!authChecked) {
     return (
@@ -449,11 +465,54 @@ export default function AdminUsersPage() {
                       )}
                     </div>
                   </div>
-                );
-              })}
+                )})}
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 32, fontFamily: 'DM Sans, sans-serif' }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                border: '1px solid #e2e0d8', background: '#fff', color: currentPage === 1 ? '#ccc' : '#2a2820',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              Prev
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  padding: '8px 14px', border: '1px solid',
+                  borderColor: currentPage === pageNum ? '#e7b605' : '#e2e0d8',
+                  background: currentPage === pageNum ? '#e7b605' : '#fff',
+                  color: currentPage === pageNum ? '#fff' : '#2a2820',
+                  cursor: 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+                }}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                border: '1px solid #e2e0d8', background: '#fff', color: currentPage === totalPages ? '#ccc' : '#2a2820',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {/* Legend */}
         <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>

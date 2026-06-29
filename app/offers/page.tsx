@@ -67,29 +67,59 @@ export default function OffersPage() {
   const [hideExpired, setHideExpired] = useState(true);
   const [offers, setOffers] = useState<Offer[]>([]);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemsPerPage = 10;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [category, typeFilter, featuredOnly, search, locationFilter, hideExpired]);
+
   useEffect(() => {
     async function loadOffers() {
       try {
-        const res = await fetch('/api/offers');
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString(),
+        });
+
+        if (category !== 'All Categories') queryParams.append('category', category);
+
+        const selectedType = typeMap[typeFilter];
+        if (selectedType !== 'all') queryParams.append('type', selectedType);
+        if (featuredOnly) queryParams.append('featured', 'true');
+        if (search) queryParams.append('search', search);
+        if (locationFilter !== 'All Locations') queryParams.append('location', locationFilter);
+        if (hideExpired) queryParams.append('hideExpired', 'true');
+
+        const res = await fetch(`/api/offers?${queryParams.toString()}`);
         if (res.ok) {
-          const dbData = await res.json();
+          const data = await res.json();
+          const dbData = data.offers || [];
+
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+            setTotalResults(data.pagination.total);
+          }
+
           const mapped: Offer[] = dbData.map((o: any) => ({
             id: o.id,
             businessName: o.business_name,
             businessId: o.business_id,
             title: o.title,
             type: o.type,
-            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? 'Buy 1 Get 1 Free' : o.discount_value || o.fe_discount || 'Special Offer',
+            discount: o.type === 'percentage' ? `${o.discount_value}% off` : o.type === 'fixed' ? `$${o.discount_value} off` : o.type === 'bogo' ? `Buy One Get One Free` : o.discount_value || o.fe_discount || `Special Offer`,
             description: o.description,
             category: o.category,
             location: o.location || 'Calgary, AB',
             expiryDate: o.expiry_date,
             status: o.status.toLowerCase(),
-            featured: o.featured || false,
-            submittedAt: o.created_at || o.created_At || new Date().toISOString(),
+            featured: !!o.featured,
+            submittedAt: o.created_at,
             foundersEdgeDiscount: o.fe_discount,
             eventsPageUrl: o.events_page_url,
-            howToRedeem: o.how_to_redeem
+            howToRedeem: o.how_to_redeem,
           }));
           setOffers(mapped);
         }
@@ -98,33 +128,9 @@ export default function OffersPage() {
       }
     }
     loadOffers();
-  }, []);
+  }, [currentPage, category, typeFilter, featuredOnly, search, locationFilter, hideExpired]);
 
-  const selectedType = typeMap[typeFilter];
-
-  const filtered = offers
-    .filter(o => {
-      const q = search.toLowerCase();
-      const matchSearch =
-        !search ||
-        o.title.toLowerCase().includes(q) ||
-        o.businessName.toLowerCase().includes(q) ||
-        o.description.toLowerCase().includes(q) ||
-        o.category.toLowerCase().includes(q);
-      const matchCat = category === 'All Categories' || o.category === category;
-      const matchType = selectedType === 'all' || o.type === selectedType;
-      const matchLocation =
-        locationFilter === 'All Locations' ||
-        o.location.toLowerCase().includes(locationFilter.toLowerCase());
-      const matchFeatured = !featuredOnly || o.featured;
-      const matchExpiry = !hideExpired || !isExpired(o.expiryDate);
-      return matchSearch && matchCat && matchType && matchLocation && matchFeatured && matchExpiry;
-    })
-    .sort((a, b) => {
-      if (a.featured && !b.featured) return -1;
-      if (!a.featured && b.featured) return 1;
-      return new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime();
-    });
+  const filtered = offers;
 
   return (
     <PageLayout>
@@ -270,19 +276,19 @@ export default function OffersPage() {
                     )}
                   </div>
 
-                  {/* Discount headline */}
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '26px', color: '#e7b605', lineHeight: 1.1 }}>
-                    {offer.discount}
+                  {/* Title */}
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '20px', color: '#2a2820', lineHeight: 1.2 }}>
+                    {offer.title}
                   </div>
 
-                  {/* Title */}
-                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 800, fontSize: '16px', color: '#2a2820' }}>
-                    {offer.title}
+                  {/* Discount headline */}
+                  <div style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 900, fontSize: '18px', color: '#e7b605', lineHeight: 1.1 }}>
+                    {offer.discount}
                   </div>
 
                   {/* Description */}
                   <p style={{ fontFamily: 'Noto Serif, serif', color: '#5a5650', fontSize: '14px', lineHeight: 1.7, margin: 0 }}>
-                    {offer.description.length > 120 ? offer.description.slice(0, 120) + '…' : offer.description}
+                    {(offer.description || '').length > 120 ? (offer.description || '').slice(0, 120) + '…' : (offer.description || '')}
                   </p>
 
                   {/* Business + meta */}
@@ -326,6 +332,47 @@ export default function OffersPage() {
               );
             })}
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 40, fontFamily: 'DM Sans, sans-serif' }}>
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="btn-outline"
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  opacity: currentPage === 1 ? 0.5 : 1,
+                  background: 'transparent',
+                  border: '1px solid #e2e0d8',
+                  color: '#5a5650'
+                }}
+              >
+                Previous
+              </button>
+              <span style={{ fontSize: '14px', color: '#2a2820', fontWeight: 600 }}>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="btn-outline"
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '12px',
+                  cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                  opacity: currentPage === totalPages ? 0.5 : 1,
+                  background: 'transparent',
+                  border: '1px solid #e2e0d8',
+                  color: '#5a5650'
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
 
           {/* Submit Offer CTA */}
           <div style={{ marginTop: 48, background: '#000', padding: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>

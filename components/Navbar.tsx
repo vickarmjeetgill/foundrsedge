@@ -39,8 +39,7 @@ export default function Navbar() {
         } else {
           setUser(null);
           setIsImpersonating(false);
-          
-          // If on a protected route, redirect to login immediately
+
           const protectedPrefixes = ['/dashboard', '/admin'];
           if (protectedPrefixes.some(prefix => pathname.startsWith(prefix))) {
             window.location.href = '/login';
@@ -51,8 +50,7 @@ export default function Navbar() {
       }
     }
     checkAuth();
-    
-    // Polling: check session status every 10 seconds in the background
+
     const interval = setInterval(checkAuth, 10000);
     return () => clearInterval(interval);
   }, [pathname]);

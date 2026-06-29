@@ -24,6 +24,10 @@ model businesses {
   created_at                  DateTime? @default(now()) @db.Timestamptz(6)
   members                     members?  @relation(fields: [member_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   offers                      offers[]
+
+//indexing the member_id foreign key
+  @@index([member_id])
+  @@index([business_name])
 }
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -54,6 +58,9 @@ model User {
   role         String   @default("MEMBER")
   avatarUrl    String?
   status String @default("ACTIVE")
+
+  @@index([role])
+  @@index([status])
 }
 
 model offers {
@@ -78,6 +85,15 @@ model offers {
   featured        Boolean     @default(false)
   businesses      businesses? @relation(fields: [business_id], references: [id])
   members         members?    @relation(fields: [member_id], references: [id])
+
+  @@index([member_id])
+  @@index([business_id])
+  @@index([status])
+  @@index([category])
+  @@index([type])
+  @@index([status, expiry_date])
+  @@index([created_at])
+
 }
 
 model events {
@@ -100,6 +116,11 @@ model events {
   capacity    Int         @default(50)
   duration    String      @default("2 hrs")
   members     members?    @relation(fields: [member_id], references: [id], onDelete: Cascade)
+
+  @@index([member_id])
+  @@index([status])
+  @@index([category])
+  @@index([featured, created_at])
 }
 
 enum EventStatus {
@@ -127,6 +148,12 @@ model awards {
   updated_at      DateTime @updatedAt @db.Timestamptz(6)
 
   nominations nominations[]
+
+  @@index([category])
+  @@index([region])
+  @@index([featured])
+  @@index([nominationsOpen])
+  @@index([deadline])
 }
 
 model nominations {
@@ -145,6 +172,12 @@ model nominations {
 
   award   awards   @relation(fields: [award_id], references: [id], onDelete: Cascade)
   members members? @relation(fields: [member_id], references: [id], onDelete: SetNull)
+
+  @@index([award_id])
+  @@index([member_id])
+  @@index([status])
+  @@index([created_at])
+
 }
 
 model posts {
@@ -166,6 +199,8 @@ model posts {
   comments      comments[]
   flag_reports  flag_reports[]
   notifications notifications[]
+
+  @@index([removed, created_at])
 }
 
 model comments {
@@ -182,6 +217,9 @@ model comments {
 
   post         posts          @relation(fields: [post_id], references: [id], onDelete: Cascade)
   flag_reports flag_reports[]
+
+  @@index([post_id])
+  @@index([parent_id])
 }
 
 model flag_reports {
@@ -201,6 +239,10 @@ model flag_reports {
 
   post    posts?    @relation(fields: [post_id], references: [id], onDelete: Cascade)
   comment comments? @relation(fields: [comment_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@index([comment_id])
+  @@index([reported_at])
 }
 
 model notifications {
@@ -212,6 +254,9 @@ model notifications {
   created_at DateTime? @default(now()) @db.Timestamptz(6)
 
   post posts? @relation(fields: [post_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@index([created_at])
 }
 
 model likes {

@@ -1,9 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { withErrorHandling } from '@/lib/api-error-handler';
+import { redis } from '@/lib/redis';
 
 export const GET = withErrorHandling(async () => {
   try {
+    const cacheKey = 'dashboard:overview';
+
+    try {
+      const cachedDashboard = await redis.get(cacheKey);
+      if (cachedDashboard) {
+        return NextResponse.json(JSON.parse(cachedDashboard));
+      }
+    } catch (e) {
+      console.error('Redis read error:', e);
+    }
+
     const [events, offers, posts, notifications] = await Promise.all([
       (prisma as any).events.findMany({
         orderBy: {
@@ -69,7 +81,7 @@ export const GET = withErrorHandling(async () => {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       summary: {
         events: events.length,
@@ -82,7 +94,14 @@ export const GET = withErrorHandling(async () => {
       offers,
       posts,
       notifications,
-    });
+    };
+
+    try {
+      await redis.set(cacheKey, JSON.stringify(responsePayload), 'EX', 120);
+    } catch (e) {
+      console.error('Redis write error:', e);
+    }
+    return NextResponse.json(responsePayload);
   } catch (error: any) {
     console.error('Failed to load dashboard aggregate:', error);
 

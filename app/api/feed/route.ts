@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { redis } from '@/lib/redis';
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,6 +13,16 @@ export async function GET(request: NextRequest) {
     const safeLimit = limit > 0 && limit <= 50 ? limit : 10;
 
     const skip = (safePage - 1) * safeLimit;
+    const cacheKey = `feed:page:${safePage}:limit:${safeLimit}`;
+
+    try {
+      const cachedData = await redis.get(cacheKey);
+      if (cachedData) {
+        return NextResponse.json(JSON.parse(cachedData));
+      }
+    } catch (e) {
+      console.error('Redis read error:', e);
+    }
 
     const [posts, total] = await Promise.all([
       (prisma as any).posts.findMany({
@@ -32,14 +43,22 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       page: safePage,
       limit: safeLimit,
       total,
       totalPages: Math.ceil(total / safeLimit),
       posts,
-    });
+    };
+
+    try {
+      await redis.set(cacheKey, JSON.stringify(responsePayload), 'EX', 60);
+    } catch (e) {
+      console.error('Redis write error:', e);
+    }
+
+    return NextResponse.json(responsePayload);
   } catch (error: any) {
     console.error('Failed to fetch feed:', error);
 

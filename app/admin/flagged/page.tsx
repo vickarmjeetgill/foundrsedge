@@ -50,6 +50,15 @@ export default function AdminFlaggedPage() {
   const [toast, setToast]     = useState<string | null>(null);
   const [preview, setPreview] = useState<FlagReport | null>(null);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [tab]);
+
   useEffect(() => {
     const checkAdminAccess = async () => {
       const res = await getProfile();
@@ -65,12 +74,55 @@ export default function AdminFlaggedPage() {
       }
 
       setAuthChecked(true);
-      const raw = localStorage.getItem('fe_flag_reports');
-      if (raw) { try { setReports(JSON.parse(raw)); } catch {} }
     };
 
     checkAdminAccess();
   }, [router]);
+
+  useEffect(() => {
+    if (!authChecked) return;
+
+    async function loadReports() {
+      try {
+        const queryParams = new URLSearchParams({
+          page: currentPage.toString(),
+          limit: itemsPerPage.toString()
+        });
+        if (tab !== 'All') queryParams.append('status', tab.toUpperCase());
+
+        const res = await fetch(`/api/admin/flagged?${queryParams.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          const dbReports = data.reports || [];
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages);
+            setTotalResults(data.pagination.total);
+          } else {
+            setTotalPages(1);
+            setTotalResults(dbReports.length);
+          }
+
+          const mapped: FlagReport[] = dbReports.map((r: any) => ({
+            id: r.id,
+            contentType: r.content_type,
+            contentId: r.content_id,
+            contentPreview: r.content_preview,
+            authorName: r.author_name,
+            reportedBy: r.reported_by,
+            reason: r.reason,
+            details: r.details || '',
+            status: r.status.toLowerCase() as FlagStatus,
+            reportedAt: r.reported_at
+          }));
+          setReports(mapped);
+        }
+      } catch (err) {
+        console.error('Failed to fetch flagged reports:', err);
+      }
+    }
+
+    loadReports();
+  }, [authChecked, currentPage, tab]);
 
   function showToast(msg: string) {
     setToast(msg);
@@ -116,9 +168,7 @@ export default function AdminFlaggedPage() {
     setPreview(null);
   }
 
-  const filtered = reports.filter(r =>
-    tab === 'All' || r.status === tab.toLowerCase()
-  );
+  const filtered = reports;
 
   const stats = {
     total:     reports.length,
@@ -350,11 +400,54 @@ export default function AdminFlaggedPage() {
                       </button>
                     </div>
                   </div>
-                );
-              })}
+                )})}
             </div>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 32, fontFamily: 'DM Sans, sans-serif' }}>
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                border: '1px solid #e2e0d8', background: '#fff', color: currentPage === 1 ? '#ccc' : '#2a2820',
+                cursor: currentPage === 1 ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              Prev
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(pageNum => (
+              <button
+                key={pageNum}
+                onClick={() => setCurrentPage(pageNum)}
+                style={{
+                  padding: '8px 14px', border: '1px solid',
+                  borderColor: currentPage === pageNum ? '#e7b605' : '#e2e0d8',
+                  background: currentPage === pageNum ? '#e7b605' : '#fff',
+                  color: currentPage === pageNum ? '#fff' : '#2a2820',
+                  cursor: 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+                }}
+              >
+                {pageNum}
+              </button>
+            ))}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 4, padding: '8px 14px',
+                border: '1px solid #e2e0d8', background: '#fff', color: currentPage === totalPages ? '#ccc' : '#2a2820',
+                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '13px', transition: 'all 0.2s'
+              }}
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {/* Legend */}
         <div style={{ marginTop: 24, display: 'flex', gap: 24, flexWrap: 'wrap' }}>

@@ -2,6 +2,78 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { decrypt } from "@/lib/tokens"
+import { invalidateCache } from "@/lib/redis"
+import { rateLimit } from "@/lib/rate-limiter"
+import { validateBody } from "@/lib/validate"
+import { IsString, IsNotEmpty, IsOptional, IsBoolean } from 'class-validator';
+
+export class CreateEventDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Title is required' })
+  title!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Description is required' })
+  description!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Date is required' })
+  date!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Time is required' })
+  time!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Location is required' })
+  location!: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'Category is required' })
+  category!: string;
+
+  @IsOptional()
+  @IsString()
+  price?: string;
+
+  @IsOptional()
+  @IsString()
+  host?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  featured?: boolean;
+
+  @IsOptional()
+  @IsString()
+  status?: string;
+
+  @IsOptional()
+  capacity?: number | string;
+
+  @IsOptional()
+  @IsString()
+  duration?: string;
+
+  @IsOptional()
+  tags?: string[] | string;
+
+  @IsOptional()
+  @IsString()
+  hostName?: string;
+
+  @IsOptional()
+  @IsString()
+  contactEmail?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isOnline?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  agreeGuidelines?: boolean;
+}
 
 // Helper function to check if a string is a valid UUID
 function isValidUUID(uuid: string): boolean {
@@ -23,6 +95,11 @@ export async function getEvents(request: Request) {
     const statusParam = searchParams.get("status")
     const mySubmissions = searchParams.get("mySubmissions") === "true"
     const adminView = searchParams.get("adminView") === "true"
+    const isPaginated = searchParams.has("page")
+    const page = isPaginated ? Math.max(1, parseInt(searchParams.get("page") || "1", 10)) : 1
+    const limit = isPaginated ? Math.max(1, parseInt(searchParams.get("limit") || "12", 10)) : 12
+    const skip = isPaginated ? (page - 1) * limit : undefined
+    const take = isPaginated ? limit : undefined
 
     const cookieStore = await cookies()
     const sessionToken = cookieStore.get("session")?.value
@@ -123,13 +200,39 @@ export async function getEvents(request: Request) {
     const where = andConditions.length > 0 ? { AND: andConditions } : {}
 
     // Pull events from the database and pin featured events to the top
-    const eventsList = await prisma.events.findMany({
-      where,
-      orderBy: [
-        { featured: "desc" },
-        { created_at: "desc" }
-      ]
-    })
+    const [total, eventsList] = await Promise.all([
+      prisma.events.count({ where }),
+      prisma.events.findMany({
+        where,
+        orderBy: [
+          { featured: "desc" },
+          { created_at: "desc" }
+        ],
+        skip,
+        take,
+
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          date: true,
+          time: true,
+          location: true,
+          category: true,
+          price: true,
+          host: true,
+          featured: true,
+          status: true,
+          capacity: true,
+          attendees: true
+        }
+      })
+    ])
+
+    if (isPaginated) {
+      return NextResponse.json({ events: eventsList, pagination: { total, page, limit, totalPages: Math.ceil(total / limit) } }, { status: 200 })
+    }
+
     return NextResponse.json(eventsList, { status: 200 })
   } catch (error: any) {
     console.error("Failed to fetch events with filters:", error)
@@ -142,6 +245,12 @@ export async function getEvents(request: Request) {
 // ====================================================
 export async function createEvent(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const { success } = await rateLimit(ip, 10, 60);
+    if (!success) {
+      return NextResponse.json({ error: "Too Many Requests" }, { status: 429 });
+    }
+
     const cookieStore = await cookies()
     const sessionToken = cookieStore.get("session")?.value
 
@@ -172,11 +281,16 @@ export async function createEvent(request: Request) {
       }
     }
 
-    const body = await request.json()
-    const { title, description, date, time, location, category, price, host, tags, capacity, featured, duration } = body
+    const rawBody = await request.json()
+    const { errors, data } = await validateBody(CreateEventDto, rawBody)
+    if (errors) {
+      return NextResponse.json({ success: false, error: "Validation failed", details: errors }, { status: 400 });
+    }
+    const body = data;
+    const { title, description, date, time, location, category, price, host, tags, capacity, featured, duration } = body;
 
     // Validation: Make sure they filled out all the required fields
-    if (!title || !description || !date || !time || !location || !category) {
+    if (!body.title || !body.description || !body.date || !body.time || !body.location || !body.category) {
       return NextResponse.json(
         { error: "Missing required fields: title, description, date, time, location, category" },
         { status: 400 }
@@ -206,6 +320,8 @@ export async function createEvent(request: Request) {
             : [],
       }
     })
+
+    await invalidateCache();
 
     return NextResponse.json(
       { success: true, message: "Event submitted successfully", event: newEvent },
@@ -343,6 +459,8 @@ export async function updateEvent(
       }
     })
 
+    await invalidateCache();
+
     return NextResponse.json({
       success: true,
       message: "Event updated successfully",
@@ -416,6 +534,8 @@ export async function deleteEvent(
       where: { id }
     })
 
+    await invalidateCache();
+
     return NextResponse.json({
       success: true,
       message: "Event deleted successfully",
@@ -475,6 +595,8 @@ export async function updateEventStatus(
       }
     })
 
+    await invalidateCache();
+
     return NextResponse.json({
       success: true,
       message: `Event status updated to ${status} successfully`,
@@ -530,6 +652,8 @@ export async function toggleEventFeature(
       where: { id },
       data: { featured }
     })
+
+    await invalidateCache();
 
     return NextResponse.json({
       success: true,
@@ -588,6 +712,8 @@ export async function rsvpEvent(
         }
       }
     })
+
+    await invalidateCache();
 
     return NextResponse.json({
       success: true,

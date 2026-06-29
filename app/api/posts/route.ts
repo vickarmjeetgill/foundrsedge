@@ -1,8 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/redis';
+import { rateLimit } from '@/lib/rate-limiter';
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+    const { success } = await rateLimit(ip, 20, 60);
+    if (!success) {
+      return NextResponse.json({ success: false, error: 'Too Many Requests' }, { status: 429 });
+    }
+
     const body = await request.json();
 
     const content = body.content;
@@ -27,6 +35,8 @@ export async function POST(request: NextRequest) {
         linked_url: body.linkedUrl || null,
       },
     });
+
+    await invalidateCache();
 
     return NextResponse.json(
       {

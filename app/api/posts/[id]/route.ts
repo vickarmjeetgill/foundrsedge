@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { invalidateCache } from '@/lib/redis';
 
 export async function PUT(
   request: NextRequest,
@@ -34,6 +35,8 @@ export async function PUT(
         linked_url: body.linkedUrl ?? existingPost.linked_url,
       },
     });
+
+    await invalidateCache();
 
     return NextResponse.json({
       success: true,
@@ -78,6 +81,8 @@ export async function DELETE(
         removed: true,
       },
     });
+
+    await invalidateCache();
 
     return NextResponse.json({
       success: true,
