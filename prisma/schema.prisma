@@ -57,7 +57,7 @@ model User {
   updatedAt    DateTime @updatedAt
   role         String   @default("MEMBER")
   avatarUrl    String?
-  status String @default("ACTIVE")
+  status       String   @default("ACTIVE")
 
   @@index([role])
   @@index([status])

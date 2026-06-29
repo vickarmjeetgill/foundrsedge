@@ -6,15 +6,15 @@ export default async function proxy(request: NextRequest) {
     const path = request.nextUrl.pathname;
 
     const isProtectedRoute =
-        path.startsWith('/dashboard') ||
-        path.startsWith('/admin/dashboard');
+    path.startsWith('/dashboard') ||
+    path.startsWith('/admin');
 
     if (isProtectedRoute) {
         const session = request.cookies.get('session')?.value;
         const decodedSession = await decrypt(session);
 
         if (decodedSession) {
-            if (path.startsWith('/admin/dashboard') && decodedSession.role !== 'ADMIN') {
+            if (path.startsWith('/admin') && decodedSession.role !== 'ADMIN') {
                 return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
             }
 
@@ -27,7 +27,7 @@ export default async function proxy(request: NextRequest) {
         if (decodedRefresh && decodedRefresh.userId) {
             const role = decodedRefresh.role ?? 'MEMBER';
 
-            if (path.startsWith('/admin/dashboard') && role !== 'ADMIN') {
+            if (path.startsWith('/admin') && role !== 'ADMIN') {
                 return NextResponse.redirect(new URL('/dashboard', request.nextUrl));
             }
 
@@ -56,5 +56,5 @@ export default async function proxy(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/dashboard/:path*', '/admin/dashboard/:path*'],
+   matcher: ['/dashboard/:path*', '/admin/:path*'],
 };
